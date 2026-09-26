@@ -1,0 +1,8 @@
+version: 1
+id: socal-tech
+name: Southern California tech events
+region: socal
+topic: tech
+# Narrowed to topic-specific sources until classification lands (M5).
+sources:
+  - luma-la-tech-week
