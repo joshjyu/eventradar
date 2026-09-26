@@ -4,9 +4,7 @@ from typing import Protocol
 
 from eventradar.config.loader import expand_env
 from eventradar.config.schema import BlobSettings
-from eventradar.plugins import load_plugin
-
-BLOB_GROUP = "eventradar.blob"
+from eventradar.plugins import BLOB_GROUP, load_plugin
 
 
 class BlobStore(Protocol):

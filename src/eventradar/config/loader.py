@@ -17,9 +17,8 @@ from eventradar.config.schema import (
     SourceFile,
     TopicConfig,
 )
-from eventradar.plugins import available
+from eventradar.plugins import SOURCE_GROUP, available
 
-SOURCE_GROUP = "eventradar.sources"
 _ENV_REF = re.compile(r"\$\{([A-Z0-9_]+)\}")
 
 

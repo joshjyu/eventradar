@@ -4,6 +4,9 @@ from functools import cache
 from importlib.metadata import entry_points
 from typing import Any
 
+SOURCE_GROUP = "eventradar.sources"
+BLOB_GROUP = "eventradar.blob"
+
 
 class PluginNotFoundError(LookupError):
     """Raised when no implementation is registered under a name."""
