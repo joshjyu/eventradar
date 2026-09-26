@@ -121,6 +121,18 @@ def test_retry_after_seconds_is_honored_and_capped() -> None:
     assert _RETRY_DELAY(huge, 0) == 60.0
 
 
+def test_redact_url_masks_credentials() -> None:
+    """API keys and userinfo never survive redaction."""
+    from eventradar.http.redact import redact_url
+
+    url = "https://user:pw@api.example.test/s?q=ai&api_key=abc123&Token=x"
+    out = redact_url(url)
+    assert "abc123" not in out
+    assert "pw" not in out
+    assert "q=ai" in out
+    assert out.count("REDACTED") == 3
+
+
 @respx.mock
 async def test_gzip_body_is_decoded_once() -> None:
     """Compressed responses come back decoded, without a second decode."""
