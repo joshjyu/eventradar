@@ -7,6 +7,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_serializer,
     model_validator,
 )
 
@@ -60,6 +61,18 @@ class _EventFields(_Frozen):
     url: str | None = None
     kinds: frozenset[EventKind] = frozenset()
     size_signal: int | None = Field(default=None, ge=0)
+
+    @field_serializer("kinds")
+    def _sorted_kinds(self, kinds: frozenset[EventKind]) -> list[str]:
+        """
+        Serialize kinds in a stable order.
+
+        Parameters:
+          kinds: Event kinds.
+        Returns:
+          Sorted kind values.
+        """
+        return sorted(k.value for k in kinds)
 
     @model_validator(mode="after")
     def _check_consistency(self) -> Self:
