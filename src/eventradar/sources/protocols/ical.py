@@ -16,9 +16,9 @@ from eventradar.domain.ids import content_hash
 from eventradar.domain.models import EventDraft, RawRecord
 from eventradar.sources.base import ParseError, SourceContext
 
-# Properties regenerated on every download; hashing them would make every
-# record look changed.
-_VOLATILE = ("DTSTAMP",)
+# Properties some providers regenerate on every download (Luma stamps
+# SEQUENCE with a counter); hashing them makes every record look changed.
+_VOLATILE = ("DTSTAMP", "SEQUENCE")
 _URL = re.compile(r"https?://[^\s<>\"')\]]+")
 _ONLINE_HOSTS = ("zoom.us", "meet.google.com", "teams.microsoft.com")
 _MAX_DESCRIPTION = 5000

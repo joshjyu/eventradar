@@ -1,0 +1,56 @@
+[
+  {
+    "input": "001.body",
+    "records": 1,
+    "changed": [
+      "evt-seq-1@events.example.test"
+    ],
+    "drafts": [
+      {
+        "title": "Robotics Demo Night",
+        "description": null,
+        "start_utc": "2026-10-15T01:00:00Z",
+        "end_utc": "2026-10-15T04:00:00Z",
+        "tz": "America/Los_Angeles",
+        "venue": null,
+        "address": null,
+        "lat": 33.6846,
+        "lon": -117.8265,
+        "attendance_mode": "in_person",
+        "status": "scheduled",
+        "organizer": null,
+        "url": "https://events.example.test/event/evt-seq-1",
+        "kinds": [],
+        "size_signal": null,
+        "source_id": "regression",
+        "native_id": "evt-seq-1@events.example.test"
+      }
+    ]
+  },
+  {
+    "input": "002.body",
+    "records": 1,
+    "changed": [],
+    "drafts": [
+      {
+        "title": "Robotics Demo Night",
+        "description": null,
+        "start_utc": "2026-10-15T01:00:00Z",
+        "end_utc": "2026-10-15T04:00:00Z",
+        "tz": "America/Los_Angeles",
+        "venue": null,
+        "address": null,
+        "lat": 33.6846,
+        "lon": -117.8265,
+        "attendance_mode": "in_person",
+        "status": "scheduled",
+        "organizer": null,
+        "url": "https://events.example.test/event/evt-seq-1",
+        "kinds": [],
+        "size_signal": null,
+        "source_id": "regression",
+        "native_id": "evt-seq-1@events.example.test"
+      }
+    ]
+  }
+]
