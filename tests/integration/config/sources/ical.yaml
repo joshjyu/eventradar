@@ -1,0 +1,16 @@
+version: 1
+sources:
+  - id: fixture-utc
+    adapter: ical
+    params:
+      url: https://feeds.example.test/utc.ics
+      default_tz: America/Los_Angeles
+  - id: fixture-edge
+    adapter: ical
+    params:
+      url: https://feeds.example.test/edge.ics
+      default_tz: America/Los_Angeles
+  - id: fixture-broken
+    adapter: ical
+    params:
+      url: https://feeds.example.test/broken.ics

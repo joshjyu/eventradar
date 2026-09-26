@@ -1,0 +1,5 @@
+version: 1
+id: test-all
+name: Test profile
+region: test-region
+topic: test-topic

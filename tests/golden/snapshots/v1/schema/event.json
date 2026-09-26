@@ -1,0 +1,248 @@
+{
+  "$defs": {
+    "AttendanceMode": {
+      "description": "Mirrors schema.org EventAttendanceModeEnumeration.",
+      "enum": [
+        "in_person",
+        "online",
+        "mixed",
+        "unknown"
+      ],
+      "title": "AttendanceMode",
+      "type": "string"
+    },
+    "EventSourceRef": {
+      "additionalProperties": false,
+      "description": "Provenance link from a published event to a source record.",
+      "properties": {
+        "native_id": {
+          "title": "Native Id",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        }
+      },
+      "required": [
+        "source_id",
+        "native_id"
+      ],
+      "title": "EventSourceRef",
+      "type": "object"
+    },
+    "EventStatus": {
+      "description": "Mirrors schema.org EventStatusType.",
+      "enum": [
+        "scheduled",
+        "postponed",
+        "cancelled"
+      ],
+      "title": "EventStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A resolved event as published under the versioned API.",
+  "properties": {
+    "address": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Address"
+    },
+    "attendance_mode": {
+      "$ref": "#/$defs/AttendanceMode",
+      "default": "unknown"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "end_utc": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "End Utc"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "first_seen": {
+      "format": "date-time",
+      "title": "First Seen",
+      "type": "string"
+    },
+    "kinds": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Kinds",
+      "type": "array"
+    },
+    "last_seen": {
+      "format": "date-time",
+      "title": "Last Seen",
+      "type": "string"
+    },
+    "lat": {
+      "anyOf": [
+        {
+          "maximum": 90,
+          "minimum": -90,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lat"
+    },
+    "lon": {
+      "anyOf": [
+        {
+          "maximum": 180,
+          "minimum": -180,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lon"
+    },
+    "organizer": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Organizer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "size_signal": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Size Signal"
+    },
+    "sources": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EventSourceRef"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "start_utc": {
+      "format": "date-time",
+      "title": "Start Utc",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/EventStatus",
+      "default": "scheduled"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "tz": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tz"
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Url"
+    },
+    "venue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Venue"
+    }
+  },
+  "required": [
+    "title",
+    "start_utc",
+    "event_id",
+    "first_seen",
+    "last_seen"
+  ],
+  "title": "Event",
+  "type": "object"
+}

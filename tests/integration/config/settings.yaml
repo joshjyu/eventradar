@@ -1,0 +1,13 @@
+version: 1
+http:
+  user_agent: eventradar-test
+  per_host_min_interval_s: 0
+  max_retries: 0
+environments:
+  test:
+    state:
+      backend: local
+      options: {root: "${EVENTRADAR_TEST_ROOT}/state"}
+    publish:
+      backend: local
+      options: {root: "${EVENTRADAR_TEST_ROOT}/public"}

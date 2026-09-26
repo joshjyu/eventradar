@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "socal",
+        "name": "Southern California",
+        "note": "Coarse outline of the 8 southern counties; replaced by county boundaries in M5."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-121.0, 34.4], [-120.65, 35.12], [-119.45, 35.0],
+          [-118.9, 34.85], [-117.65, 34.82], [-117.65, 35.8],
+          [-115.65, 35.8], [-114.4, 34.4], [-114.5, 32.72],
+          [-117.12, 32.53], [-117.4, 32.4], [-118.8, 33.2],
+          [-120.6, 33.8], [-121.0, 34.4]
+        ]]
+      }
+    }
+  ]
+}
