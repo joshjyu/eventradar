@@ -16,6 +16,7 @@ type ResponseHook = Callable[[httpx.Response], None]
 
 _RETRY_STATUSES = {429, 500, 502, 503, 504}
 _MAX_BACKOFF_S = 60.0
+_ENCODING_HEADERS = {"content-encoding", "content-length", "transfer-encoding"}
 
 
 class HttpError(RuntimeError):
@@ -137,9 +138,16 @@ class HttpClient:
                         f"GET {url}: body exceeds {self._max_bytes} bytes"
                     )
                 chunks.append(chunk)
+            # The body is already decoded; keeping these headers would make
+            # httpx decode it a second time.
+            kept = [
+                (k, v)
+                for k, v in resp.headers.multi_items()
+                if k.lower() not in _ENCODING_HEADERS
+            ]
             return httpx.Response(
                 status_code=resp.status_code,
-                headers=resp.headers,
+                headers=kept,
                 content=b"".join(chunks),
                 request=resp.request,
             )

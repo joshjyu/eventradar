@@ -1,5 +1,7 @@
 """Tests for the shared HTTP client."""
 
+import gzip
+
 import httpx
 import pytest
 import respx
@@ -117,3 +119,17 @@ def test_retry_after_seconds_is_honored_and_capped() -> None:
     huge = httpx.Response(429, headers={"Retry-After": "9999"})
     assert _RETRY_DELAY(ok, 0) == 5.0
     assert _RETRY_DELAY(huge, 0) == 60.0
+
+
+@respx.mock
+async def test_gzip_body_is_decoded_once() -> None:
+    """Compressed responses come back decoded, without a second decode."""
+    body = gzip.compress(b"BEGIN:VCALENDAR")
+    respx.get(URL).mock(
+        return_value=httpx.Response(
+            200, content=body, headers={"Content-Encoding": "gzip"}
+        )
+    )
+    async with HttpClient(_settings()) as http:
+        response = await http.get(URL)
+    assert response.content == b"BEGIN:VCALENDAR"
