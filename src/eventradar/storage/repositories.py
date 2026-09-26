@@ -423,10 +423,11 @@ class EventRepository:
           end: Exclusive window end.
           now: Events that already started are excluded.
         Returns:
-          Events ordered by start time, then id.
+          Non-cancelled events ordered by start time, then id.
         """
         return self._query(
-            "p.first_seen >= ? AND p.first_seen < ? AND e.start_utc > ?",
+            "p.first_seen >= ? AND p.first_seen < ? AND e.start_utc > ? "
+            "AND e.status != 'cancelled'",
             profile_id,
             (to_db(start), to_db(end), to_db(now)),
         )
