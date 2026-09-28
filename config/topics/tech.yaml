@@ -1,0 +1,17 @@
+version: 1
+id: tech
+name: Technology
+keywords:
+  - hackathon
+  - developer
+  - engineering
+  - startup
+  - ai
+  - machine learning
+  - data
+  - cloud
+  - devops
+  - security
+  - web3
+  - product
+exclude_keywords: []

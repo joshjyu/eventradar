@@ -1,0 +1,207 @@
+{
+  "count": 7,
+  "events": [
+    {
+      "address": "123 Main St, Irvine, CA",
+      "attendance_mode": "in_person",
+      "description": null,
+      "end_utc": "2026-10-02T03:00:00Z",
+      "event_id": "EVT0001",
+      "first_seen": "2026-09-26T13:17:00Z",
+      "kinds": [],
+      "last_seen": "2026-09-26T13:17:00Z",
+      "lat": null,
+      "lon": null,
+      "organizer": null,
+      "schema_version": "1.0",
+      "size_signal": null,
+      "sources": [
+        {
+          "native_id": "floating-1",
+          "source_id": "fixture-edge",
+          "url": null
+        }
+      ],
+      "start_utc": "2026-10-02T01:00:00Z",
+      "status": "scheduled",
+      "title": "Floating Meetup",
+      "tz": "America/Los_Angeles",
+      "url": null,
+      "venue": null
+    },
+    {
+      "address": null,
+      "attendance_mode": "online",
+      "description": null,
+      "end_utc": null,
+      "event_id": "EVT0004",
+      "first_seen": "2026-09-26T13:17:00Z",
+      "kinds": [],
+      "last_seen": "2026-09-26T13:17:00Z",
+      "lat": null,
+      "lon": null,
+      "organizer": null,
+      "schema_version": "1.0",
+      "size_signal": null,
+      "sources": [
+        {
+          "native_id": "cancelled-1",
+          "source_id": "fixture-edge",
+          "url": "https://zoom.us/j/123"
+        }
+      ],
+      "start_utc": "2026-10-02T17:00:00Z",
+      "status": "cancelled",
+      "title": "Cancelled Workshop",
+      "tz": "America/Los_Angeles",
+      "url": "https://zoom.us/j/123",
+      "venue": null
+    },
+    {
+      "address": null,
+      "attendance_mode": "unknown",
+      "description": null,
+      "end_utc": "2026-10-05T07:00:00Z",
+      "event_id": "EVT0002",
+      "first_seen": "2026-09-26T13:17:00Z",
+      "kinds": [],
+      "last_seen": "2026-09-26T13:17:00Z",
+      "lat": null,
+      "lon": null,
+      "organizer": null,
+      "schema_version": "1.0",
+      "size_signal": null,
+      "sources": [
+        {
+          "native_id": "allday-1",
+          "source_id": "fixture-edge",
+          "url": null
+        }
+      ],
+      "start_utc": "2026-10-03T07:00:00Z",
+      "status": "scheduled",
+      "title": "All-Day Hackathon",
+      "tz": "America/Los_Angeles",
+      "url": null,
+      "venue": null
+    },
+    {
+      "address": null,
+      "attendance_mode": "unknown",
+      "description": null,
+      "end_utc": null,
+      "event_id": "EVT0005",
+      "first_seen": "2026-09-26T13:17:00Z",
+      "kinds": [],
+      "last_seen": "2026-09-26T13:17:00Z",
+      "lat": null,
+      "lon": null,
+      "organizer": null,
+      "schema_version": "1.0",
+      "size_signal": null,
+      "sources": [
+        {
+          "native_id": "sha256:2e5432a04eeff53c8b49e884cb67f2a2d36ef79901e5dd4e257eea007798cd6c",
+          "source_id": "fixture-edge",
+          "url": null
+        }
+      ],
+      "start_utc": "2026-10-05T17:00:00Z",
+      "status": "scheduled",
+      "title": "No UID Event",
+      "tz": "America/Los_Angeles",
+      "url": null,
+      "venue": null
+    },
+    {
+      "address": null,
+      "attendance_mode": "in_person",
+      "description": "Get up-to-date information at: https://events.example.test/hack-night\n\nBring a laptop.",
+      "end_utc": "2026-10-15T04:00:00Z",
+      "event_id": "EVT0006",
+      "first_seen": "2026-09-26T13:17:00Z",
+      "kinds": [],
+      "last_seen": "2026-09-26T13:17:00Z",
+      "lat": 34.0522,
+      "lon": -118.2437,
+      "organizer": "Builders Guild",
+      "schema_version": "1.0",
+      "size_signal": null,
+      "sources": [
+        {
+          "native_id": "evt-aaa111@events.example.test",
+          "source_id": "fixture-utc",
+          "url": "https://events.example.test/event/evt-aaa111"
+        }
+      ],
+      "start_utc": "2026-10-15T01:00:00Z",
+      "status": "scheduled",
+      "title": "AI Builders Hack Night",
+      "tz": "America/Los_Angeles",
+      "url": "https://events.example.test/event/evt-aaa111",
+      "venue": null
+    },
+    {
+      "address": null,
+      "attendance_mode": "in_person",
+      "description": "Get up-to-date information at: https://events.example.test/cloud-summit",
+      "end_utc": "2026-10-21T01:00:00Z",
+      "event_id": "EVT0007",
+      "first_seen": "2026-09-26T13:17:00Z",
+      "kinds": [],
+      "last_seen": "2026-09-26T13:17:00Z",
+      "lat": 32.7157,
+      "lon": -117.1611,
+      "organizer": "Cloud Summit",
+      "schema_version": "1.0",
+      "size_signal": null,
+      "sources": [
+        {
+          "native_id": "evt-bbb222@events.example.test",
+          "source_id": "fixture-utc",
+          "url": "https://events.example.test/event/evt-bbb222"
+        }
+      ],
+      "start_utc": "2026-10-20T16:00:00Z",
+      "status": "scheduled",
+      "title": "SoCal Cloud Summit",
+      "tz": "America/Los_Angeles",
+      "url": "https://events.example.test/event/evt-bbb222",
+      "venue": null
+    },
+    {
+      "address": null,
+      "attendance_mode": "unknown",
+      "description": null,
+      "end_utc": "2026-12-01T19:00:00Z",
+      "event_id": "EVT0003",
+      "first_seen": "2026-09-26T13:17:00Z",
+      "kinds": [],
+      "last_seen": "2026-09-26T13:17:00Z",
+      "lat": null,
+      "lon": null,
+      "organizer": null,
+      "schema_version": "1.0",
+      "size_signal": null,
+      "sources": [
+        {
+          "native_id": "custom-tz-1",
+          "source_id": "fixture-edge",
+          "url": null
+        }
+      ],
+      "start_utc": "2026-12-01T18:00:00Z",
+      "status": "scheduled",
+      "title": "Custom Zone Talk",
+      "tz": "America/Los_Angeles",
+      "url": null,
+      "venue": null
+    }
+  ],
+  "generated_at": "2026-09-26T13:17:00+00:00",
+  "profile": {
+    "id": "test-all",
+    "name": "Test profile"
+  },
+  "schema_version": "1.0"
+}

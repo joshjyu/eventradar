@@ -1,0 +1,3 @@
+adapter: ical
+params:
+  default_tz: America/Los_Angeles

@@ -1,0 +1,34 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//eventradar//test//EN
+X-WR-CALNAME:Test Calendar
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART:20261015T010000Z
+DTEND:20261015T040000Z
+DTSTAMP:20260926T105934Z
+ORGANIZER;CN="Builders Guild":MAILTO:calendar-invite@example.test
+UID:evt-aaa111@events.example.test
+SUMMARY:AI Builders Hack Night
+DESCRIPTION:Get up-to-date information at: https://events.example.test/hac
+ k-night\n\nBring a laptop.
+LOCATION:https://events.example.test/event/evt-aaa111
+GEO:34.0522;-118.2437
+SEQUENCE:1001
+STATUS:TENTATIVE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20261020T160000Z
+DTEND:20261021T010000Z
+DTSTAMP:20260926T105934Z
+ORGANIZER;CN="Cloud Summit":MAILTO:calendar-invite@example.test
+UID:evt-bbb222@events.example.test
+SUMMARY:SoCal Cloud Summit
+DESCRIPTION:Get up-to-date information at: https://events.example.test/clo
+ ud-summit
+LOCATION:https://events.example.test/event/evt-bbb222
+GEO:32.7157;-117.1611
+SEQUENCE:1002
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR

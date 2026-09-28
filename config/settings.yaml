@@ -1,0 +1,39 @@
+version: 1
+
+http:
+  user_agent: "eventradar/0.1 (+https://github.com/joshjyu/eventradar)"
+  timeout_s: 20
+  max_concurrency: 8
+  per_host_min_interval_s: 1.0
+  max_retries: 3
+
+run:
+  lock_ttl_s: 3600
+  snapshot_retention: 14
+
+# Selected with `--env` or EVENTRADAR_ENV. `${VAR}` values are read from
+# the environment at run time and never stored.
+environments:
+  local:
+    state:
+      backend: local
+      options: {root: .eventradar/state}
+    publish:
+      backend: local
+      options: {root: .eventradar/public}
+
+  production:
+    state:
+      backend: s3
+      options:
+        endpoint_url: "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+        bucket: "${R2_STATE_BUCKET}"
+        access_key_id: "${R2_ACCESS_KEY_ID}"
+        secret_access_key: "${R2_SECRET_ACCESS_KEY}"
+    publish:
+      backend: s3
+      options:
+        endpoint_url: "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+        bucket: "${R2_PUBLIC_BUCKET}"
+        access_key_id: "${R2_ACCESS_KEY_ID}"
+        secret_access_key: "${R2_SECRET_ACCESS_KEY}"

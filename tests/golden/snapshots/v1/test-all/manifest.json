@@ -1,0 +1,39 @@
+{
+  "counts": {
+    "new": 6,
+    "upcoming": 7
+  },
+  "generated_at": "2026-09-26T13:17:00+00:00",
+  "profile": {
+    "id": "test-all",
+    "name": "Test profile"
+  },
+  "run_id": "RUN1",
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "changed": 0,
+      "fetched": 0,
+      "parse_errors": 0,
+      "parsed": 0,
+      "source_id": "fixture-broken",
+      "status": "failed"
+    },
+    {
+      "changed": 6,
+      "fetched": 6,
+      "parse_errors": 1,
+      "parsed": 5,
+      "source_id": "fixture-edge",
+      "status": "ok"
+    },
+    {
+      "changed": 2,
+      "fetched": 2,
+      "parse_errors": 0,
+      "parsed": 2,
+      "source_id": "fixture-utc",
+      "status": "ok"
+    }
+  ]
+}
