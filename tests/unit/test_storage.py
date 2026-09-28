@@ -131,3 +131,22 @@ def test_raw_insert_detects_reverted_content(
     assert repo.insert_if_changed(changed, "run-1")
     assert repo.insert_if_changed(reverted, "run-1")
     assert [r.payload for r in repo.latest()] == [{"v": 1}]
+
+
+def test_latest_one_returns_newest_payload(conn: sqlite3.Connection) -> None:
+    """Adapters can look up the newest stored version of one record."""
+    repo = RawRecordRepository(conn)
+    old = RawRecord(
+        source_id="src-a", native_id="1", payload={"v": 1}, fetched_at=NOW
+    )
+    repo.insert_if_changed(old, "run-1")
+    repo.insert_if_changed(
+        old.model_copy(
+            update={"payload": {"v": 2}, "fetched_at": NOW + timedelta(1)}
+        ),
+        "run-1",
+    )
+    latest = repo.latest_one("src-a", "1")
+    assert latest is not None
+    assert latest.payload == {"v": 2}
+    assert repo.latest_one("src-a", "missing") is None

@@ -237,6 +237,23 @@ class RawRecordRepository:
         )
         return True
 
+    def latest_one(self, source_id: str, native_id: str) -> RawRecord | None:
+        """
+        Return the most recent payload for one source record.
+
+        Parameters:
+          source_id: Source id.
+          native_id: Upstream id.
+        Returns:
+          The record, or None if never stored.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM raw_records WHERE source_id = ? AND native_id = ? "
+            "ORDER BY fetched_at DESC LIMIT 1",
+            (source_id, native_id),
+        ).fetchone()
+        return _row_to_raw(row) if row else None
+
     def latest(
         self, source_ids: Iterable[str] | None = None
     ) -> list[RawRecord]:
@@ -261,16 +278,7 @@ class RawRecordRepository:
         rows = self._conn.execute(
             sql + " ORDER BY source_id, native_id", params
         )
-        return [
-            RawRecord(
-                source_id=r["source_id"],
-                native_id=r["native_id"],
-                url=r["url"],
-                payload=json.loads(r["payload"]),
-                fetched_at=from_db(r["fetched_at"]),
-            )
-            for r in rows
-        ]
+        return [_row_to_raw(r) for r in rows]
 
 
 class EventRepository:
@@ -484,6 +492,24 @@ class EventRepository:
                     )
                 )
         return {k: tuple(v) for k, v in grouped.items()}
+
+
+def _row_to_raw(row: sqlite3.Row) -> RawRecord:
+    """
+    Rebuild a `RawRecord` from a raw_records row.
+
+    Parameters:
+      row: Row from the raw_records table.
+    Returns:
+      The record model.
+    """
+    return RawRecord(
+        source_id=row["source_id"],
+        native_id=row["native_id"],
+        url=row["url"],
+        payload=json.loads(row["payload"]),
+        fetched_at=from_db(row["fetched_at"]),
+    )
 
 
 def _draft_values(draft: EventDraft) -> tuple[Any, ...]:
