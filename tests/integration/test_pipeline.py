@@ -35,6 +35,9 @@ def bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ConfigBundle:
 
 def _mock_feeds() -> None:
     """Serve fixture feeds; one source is permanently broken."""
+    respx.get("https://feeds.example.test/robots.txt").mock(
+        return_value=httpx.Response(404)
+    )
     respx.get("https://feeds.example.test/utc.ics").mock(
         return_value=httpx.Response(
             200, content=(FIXTURES / "utc_feed.ics").read_bytes()

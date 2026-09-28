@@ -39,6 +39,7 @@ def _settings(**overrides: object) -> HttpSettings:
         "user_agent": "eventradar-test",
         "per_host_min_interval_s": 0,
         "max_retries": 2,
+        "respect_robots": False,
     }
     fields.update(overrides)
     return HttpSettings.model_validate(fields)

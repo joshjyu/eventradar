@@ -45,7 +45,9 @@ async def test_adapter_contract(
         id="contract-src", adapter=adapter, params={"url": FEED_URL, **params}
     )
     source = build_source(config)
-    settings = HttpSettings(user_agent="test", per_host_min_interval_s=0)
+    settings = HttpSettings(
+        user_agent="test", per_host_min_interval_s=0, respect_robots=False
+    )
     async with HttpClient(settings) as http:
         records = await source.fetch(SourceContext(http=http, now=NOW))
     assert records

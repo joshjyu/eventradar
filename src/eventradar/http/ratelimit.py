@@ -16,8 +16,21 @@ class HostRateLimiter:
           min_interval_s: Minimum seconds between requests per host.
         """
         self._interval = min_interval_s
+        self._overrides: dict[str, float] = {}
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._last: dict[str, float] = {}
+
+    def slow_down(self, host: str, min_interval_s: float) -> None:
+        """
+        Raise one host's interval, e.g. to honor robots.txt Crawl-delay.
+
+        Parameters:
+          host: Hostname.
+          min_interval_s: Requested minimum interval; lower values are
+            ignored.
+        """
+        current = self._overrides.get(host, self._interval)
+        self._overrides[host] = max(current, min_interval_s)
 
     async def wait(self, host: str) -> None:
         """
@@ -29,7 +42,8 @@ class HostRateLimiter:
         async with self._locks[host]:
             last = self._last.get(host)
             if last is not None:
-                delay = self._interval - (time.monotonic() - last)
+                interval = self._overrides.get(host, self._interval)
+                delay = interval - (time.monotonic() - last)
                 if delay > 0:
                     await asyncio.sleep(delay)
             self._last[host] = time.monotonic()
