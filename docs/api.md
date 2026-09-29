@@ -13,4 +13,6 @@ Static JSON served from the public bucket. Breaking changes ship under
 
 Feed document: `schema_version`, `profile`, `generated_at`, `count`,
 `events[]`. Times are ISO 8601 UTC; `tz` is the event's IANA zone.
-`event_id` is stable across runs.
+`event_id` is stable across runs. When two postings are found to be the
+same event, they merge into the older `event_id`, and `sources` lists
+every posting.
