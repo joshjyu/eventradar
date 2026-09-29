@@ -74,12 +74,13 @@ async def test_gives_up_after_max_retries() -> None:
 
 @respx.mock
 async def test_client_errors_are_not_retried() -> None:
-    """A 404 fails immediately."""
+    """A 404 fails immediately and reports its status."""
     route = respx.get(URL).mock(return_value=httpx.Response(404))
     async with HttpClient(_settings()) as http:
-        with pytest.raises(HttpError, match="HTTP 404"):
+        with pytest.raises(HttpError, match="HTTP 404") as caught:
             await http.get(URL)
     assert route.call_count == 1
+    assert caught.value.status == 404
 
 
 @respx.mock

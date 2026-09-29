@@ -31,6 +31,17 @@ _ENCODING_HEADERS = {"content-encoding", "content-length", "transfer-encoding"}
 class HttpError(RuntimeError):
     """A request failed after all retries."""
 
+    def __init__(self, message: str, status: int | None = None) -> None:
+        """
+        Record the failure.
+
+        Parameters:
+          message: Redacted description of the failure.
+          status: Final HTTP status, when the server answered with an error.
+        """
+        super().__init__(message)
+        self.status = status
+
 
 class HttpClient:
     """Wraps `httpx.AsyncClient` with shared politeness policies."""
@@ -203,7 +214,7 @@ class HttpClient:
             if self._on_response:
                 self._on_response(response)
             return response
-        raise HttpError(f"{label}: HTTP {status}")
+        raise HttpError(f"{label}: HTTP {status}", status)
 
     async def _allowed(self, url: str) -> bool:
         """
