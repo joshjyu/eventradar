@@ -21,3 +21,6 @@ Worker is verified, then is removed.
 
 - Scheduling no longer depends on repository activity.
 - The token expires yearly and must be rotated (`docs/scheduler.md`).
+- Verified 2026-09-29 with a temporary cron; the workflow `schedule`
+  fallback was then removed.
+- Cron Trigger changes can take up to about 15 minutes to take effect.
