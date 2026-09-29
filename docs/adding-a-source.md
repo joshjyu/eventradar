@@ -39,6 +39,17 @@
 4. Include it in a profile's `sources:` list (or leave the profile at
    `all`).
 
+## Platform adapters
+
+| Adapter | Discovery | Credentials |
+|---|---|---|
+| `meetup` | GraphQL `eventSearch` per area x keyword, filtered by topic category | none |
+| `devpost` | Listing API, then each hackathon page's JSON-LD | none |
+| `eventbrite` | Official API v3, live events per organizer | `EVENTBRITE_TOKEN` |
+
+Meetup's keyword search is a loose semantic match; set
+`topic_category_id` (546 is Technology) to keep results on topic.
+
 ## New adapter
 
 1. Implement the `Source` protocol (`src/eventradar/sources/base.py`):

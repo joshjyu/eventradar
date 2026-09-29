@@ -49,8 +49,20 @@ Every 90 days, or immediately on suspected exposure:
 3. Trigger `daily` with *Run workflow* and confirm it succeeds.
 4. Delete the old token in Cloudflare.
 
+## Eventbrite API token
+
+The `eventbrite` adapter reads a personal OAuth token from
+`EVENTBRITE_TOKEN`. It only reads public event data.
+
+1. Sign in at eventbrite.com -> account menu -> Developer Links -> API
+   Keys -> Create API key. Copy the **Private token**.
+2. Add it as the `EVENTBRITE_TOKEN` secret in the `production`
+   environment.
+3. Set `enabled: true` for `eventbrite-tech-organizers` in
+   `config/sources/eventbrite.yaml`.
+
 ## Later secrets
 
 Add to the same `production` environment when their milestones land:
-`MEETUP_TOKEN` (M3), `SERPAPI_KEY` (M7), `ANTHROPIC_API_KEY` (M8). Set a
-usage cap or spend limit on each provider account.
+`SERPAPI_KEY` (M7) and the LLM provider key (M8). Set a usage cap or spend
+limit on each provider account. Meetup and Devpost need no credentials.
