@@ -8,6 +8,11 @@ baseline: 1.0
 items:
   # --- untrusted, all-topic city feeds -----------------------------------
   - {title: "Coding Assistant Meetup Los Angeles", tech: true}
+  - {title: "Claude Code Meetup Los Angeles", tech: true}
+  - {title: "Prompting Tips for ChatGPT Power Users", tech: true}
+  - {title: "Claude Monet: Water Lilies Gallery Night", tech: false}
+  - {title: "Cursor & Calligraphy: A Handwriting Workshop", tech: false}
+  - {title: "Gemini Season Astrology Brunch", tech: false}
   - {title: "Building the Future of Digital Play: AI at a Toy Company", tech: true}
   - {title: "Artificially Unintelligent Tech Comedy Show", tech: true}
   - {title: "Robotics Demo Night", tech: true}

@@ -43,6 +43,12 @@ keywords:
   - vibe code
   - vibe coding
   - vibecoding
+  # AI developer tools, by full name only: bare "Claude", "Cursor", and
+  # "Gemini" are common outside tech.
+  - claude code
+  - chatgpt
+  - openai
+  - github copilot
   # AI and data
   - ai
   - a.i.
