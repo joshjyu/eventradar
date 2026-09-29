@@ -48,7 +48,7 @@ def test_0003_backfills_primary_source(tmp_path: Path) -> None:
             "INSERT INTO event_sources VALUES (?, 'n', 'E1', NULL, 'h')",
             (source,),
         )
-    assert migrate(conn) == ["0003_geocode_priority_aliases.sql"]
+    assert migrate(conn)[0] == "0003_geocode_priority_aliases.sql"
     primary = conn.execute(
         "SELECT primary_source FROM events WHERE event_id = 'E1'"
     ).fetchone()[0]
