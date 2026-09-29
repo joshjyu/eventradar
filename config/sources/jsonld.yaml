@@ -3,9 +3,14 @@ version: 1
 # Eventbrite city hubs: the JSON-LD ItemList on each listing page links to
 # event pages, whose JSON-LD holds the full event. Hubs keep returning
 # loosely related results on later pages, so `pages` is a hard cap.
+#
+# Disabled: Eventbrite answers HTTP 405 to requests from cloud datacenter
+# IPs (e.g. GitHub-hosted runners). Eventbrite coverage moves to its
+# official API.
 sources:
   - id: eventbrite-la-tech
     adapter: jsonld
+    enabled: false
     params:
       discovery:
         type: hub
@@ -19,6 +24,7 @@ sources:
 
   - id: eventbrite-oc-tech
     adapter: jsonld
+    enabled: false
     params:
       discovery:
         type: hub
@@ -32,6 +38,7 @@ sources:
 
   - id: eventbrite-sd-tech
     adapter: jsonld
+    enabled: false
     params:
       discovery:
         type: hub
