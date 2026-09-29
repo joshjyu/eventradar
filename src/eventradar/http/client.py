@@ -125,9 +125,34 @@ class HttpClient:
         Returns:
           The final response (status < 400).
         """
+        return await self.send_json("POST", url, body, headers)
+
+    async def send_json(
+        self,
+        method: str,
+        url: str,
+        body: Any,
+        headers: dict[str, str] | None = None,
+        retry: bool = True,
+    ) -> httpx.Response:
+        """
+        Send a JSON body with any method.
+
+        Pass `retry=False` for requests that are not safe to repeat, such as
+        creating a resource.
+
+        Parameters:
+          method: HTTP method, e.g. `POST` or `PATCH`.
+          url: Absolute URL.
+          body: JSON-serializable request body.
+          headers: Extra request headers.
+          retry: Whether transient failures are retried.
+        Returns:
+          The final response (status < 400).
+        """
         merged = {"Content-Type": "application/json", **(headers or {})}
         content = json.dumps(body).encode()
-        return await self._request("POST", url, merged, content)
+        return await self._request(method, url, merged, content, retry)
 
     async def _request(
         self,
@@ -135,6 +160,7 @@ class HttpClient:
         url: str,
         headers: dict[str, str] | None,
         content: bytes | None = None,
+        retry: bool = True,
     ) -> httpx.Response:
         """
         Send a request with robots checks, spacing, and retries.
@@ -144,6 +170,7 @@ class HttpClient:
           url: Absolute URL.
           headers: Request headers.
           content: Request body, if any.
+          retry: Whether transient failures are retried.
         Returns:
           The final response (status < 400).
         """
@@ -151,7 +178,7 @@ class HttpClient:
         if self._settings.respect_robots and not await self._allowed(url):
             raise HttpError(f"{label}: disallowed by robots.txt")
         key = site_key(httpx.URL(url).host)
-        attempts = self._settings.max_retries + 1
+        attempts = self._settings.max_retries + 1 if retry else 1
         status: int | None = None
         for attempt in range(attempts):
             last = attempt + 1 == attempts

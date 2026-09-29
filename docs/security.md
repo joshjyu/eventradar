@@ -49,6 +49,12 @@ Every 90 days, or immediately on suspected exposure:
 3. Trigger `daily` with *Run workflow* and confirm it succeeds.
 4. Delete the old token in Cloudflare.
 
+## Health alerts
+
+The daily job files `source-health` issues with its own short-lived
+`GITHUB_TOKEN`, granted `issues: write` for that job only. No personal
+token is involved.
+
 ## Eventbrite API token
 
 The `eventbrite` adapter reads a personal OAuth token from

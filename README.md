@@ -20,4 +20,5 @@ uv run eventradar run --no-publish
 - `workers/scheduler/` — Cloudflare Worker that triggers the daily run
 - `docs/adr/` — architecture decisions
 
-See `CONTRIBUTING.md` for conventions.
+See `CONTRIBUTING.md` for conventions and `docs/operations.md` for the
+runtime runbook.

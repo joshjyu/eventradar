@@ -187,6 +187,95 @@ class GeocodeCacheRepository:
 
 
 @dataclass(frozen=True)
+class SourceState:
+    """Health of one source across runs."""
+
+    source_id: str
+    status: str
+    reason: str | None = None
+    unhealthy_runs: int = 0
+    alerted: bool = False
+    since: datetime | None = None
+    last_probe: datetime | None = None
+
+
+class SourceStateRepository:
+    """Per-source health state."""
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        """
+        Bind to a connection.
+
+        Parameters:
+          conn: Open connection.
+        """
+        self._conn = conn
+
+    def get(self, source_id: str) -> SourceState:
+        """
+        Read a source's state; unknown sources are healthy.
+
+        Parameters:
+          source_id: Source id.
+        Returns:
+          The state.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM source_state WHERE source_id = ?", (source_id,)
+        ).fetchone()
+        if row is None:
+            return SourceState(source_id=source_id, status="healthy")
+        return SourceState(
+            source_id=source_id,
+            status=row["status"],
+            reason=row["reason"],
+            unhealthy_runs=row["unhealthy_runs"],
+            alerted=bool(row["alerted"]),
+            since=from_db(row["since"]) if row["since"] else None,
+            last_probe=(
+                from_db(row["last_probe"]) if row["last_probe"] else None
+            ),
+        )
+
+    def put(self, state: SourceState, now: datetime) -> None:
+        """
+        Store a source's state.
+
+        Parameters:
+          state: New state.
+          now: Update time.
+        """
+        self._conn.execute(
+            "INSERT OR REPLACE INTO source_state (source_id, status, reason, "
+            "updated_at, unhealthy_runs, alerted, since, last_probe) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                state.source_id,
+                state.status,
+                state.reason,
+                to_db(now),
+                state.unhealthy_runs,
+                int(state.alerted),
+                to_db(state.since) if state.since else None,
+                to_db(state.last_probe) if state.last_probe else None,
+            ),
+        )
+
+    def disabled(self) -> list[SourceState]:
+        """
+        List sources disabled by health checks.
+
+        Returns:
+          Disabled sources' states, by id.
+        """
+        rows = self._conn.execute(
+            "SELECT source_id FROM source_state WHERE status = 'disabled' "
+            "ORDER BY source_id"
+        )
+        return [self.get(r[0]) for r in rows]
+
+
+@dataclass(frozen=True)
 class UpsertResult:
     """Result of writing a draft into the events table."""
 
@@ -257,6 +346,26 @@ class RunRepository:
             ),
         )
 
+    def history(
+        self, source_id: str, since: datetime, before_run: str
+    ) -> list[SourceRunRow]:
+        """
+        Read a source's earlier runs within a window.
+
+        Parameters:
+          source_id: Source id.
+          since: Earliest start time included.
+          before_run: Current run id, excluded.
+        Returns:
+          Rows, oldest first.
+        """
+        rows = self._conn.execute(
+            "SELECT * FROM source_runs WHERE source_id = ? "
+            "AND started_at >= ? AND run_id != ? ORDER BY started_at",
+            (source_id, to_db(since), before_run),
+        )
+        return [_row_to_source_run(r) for r in rows]
+
     def source_rows(self, run_id: str) -> list[SourceRunRow]:
         """
         Read per-source metrics for a run.
@@ -270,16 +379,7 @@ class RunRepository:
             "SELECT * FROM source_runs WHERE run_id = ? ORDER BY source_id",
             (run_id,),
         )
-        return [
-            SourceRunRow(
-                **{
-                    **dict(r),
-                    "started_at": from_db(r["started_at"]),
-                    "finished_at": from_db(r["finished_at"]),
-                }
-            )
-            for r in rows
-        ]
+        return [_row_to_source_run(r) for r in rows]
 
 
 class RawRecordRepository:
@@ -347,6 +447,26 @@ class RawRecordRepository:
             (to_db(before),),
         )
         return cur.rowcount
+
+    def for_run(
+        self, source_id: str, run_id: str, limit: int
+    ) -> list[RawRecord]:
+        """
+        Sample the records a run stored for a source.
+
+        Parameters:
+          source_id: Source id.
+          run_id: Run id.
+          limit: Maximum records.
+        Returns:
+          Records, by native id.
+        """
+        rows = self._conn.execute(
+            "SELECT * FROM raw_records WHERE source_id = ? AND run_id = ? "
+            "ORDER BY native_id LIMIT ?",
+            (source_id, run_id, limit),
+        )
+        return [_row_to_raw(r) for r in rows]
 
     def latest_one(self, source_id: str, native_id: str) -> RawRecord | None:
         """
@@ -968,6 +1088,24 @@ class EventRepository:
                     )
                 )
         return {k: tuple(v) for k, v in grouped.items()}
+
+
+def _row_to_source_run(row: sqlite3.Row) -> SourceRunRow:
+    """
+    Rebuild a `SourceRunRow` from a source_runs row.
+
+    Parameters:
+      row: Row from the source_runs table.
+    Returns:
+      The metrics row.
+    """
+    return SourceRunRow(
+        **{
+            **dict(row),
+            "started_at": from_db(row["started_at"]),
+            "finished_at": from_db(row["finished_at"]),
+        }
+    )
 
 
 def _row_to_raw(row: sqlite3.Row) -> RawRecord:

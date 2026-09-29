@@ -320,3 +320,51 @@ def test_cancellation_from_any_source_sticks(
         "E1": EventStatus.CANCELLED,
         "E2": EventStatus.CANCELLED,
     }
+
+
+def test_source_state_round_trip(conn: sqlite3.Connection) -> None:
+    """Unknown sources are healthy; stored state reads back intact."""
+    from eventradar.storage.repositories import (
+        SourceState,
+        SourceStateRepository,
+    )
+
+    repo = SourceStateRepository(conn)
+    assert repo.get("new").status == "healthy"
+    state = SourceState(
+        source_id="s",
+        status="disabled",
+        reason="fetch failed",
+        unhealthy_runs=7,
+        alerted=True,
+        since=NOW,
+        last_probe=NOW,
+    )
+    repo.put(state, NOW)
+    assert repo.get("s") == state
+    assert [s.source_id for s in repo.disabled()] == ["s"]
+
+
+def test_run_history_window(conn: sqlite3.Connection) -> None:
+    """History covers the window and excludes the current run."""
+    from eventradar.storage.repositories import SourceRunRow
+
+    runs = RunRepository(conn)
+    for i in range(3):
+        run_id = f"h{i}"
+        runs.start(run_id, NOW + timedelta(days=i))
+        runs.record_source(
+            SourceRunRow(
+                run_id=run_id,
+                source_id="s",
+                started_at=NOW + timedelta(days=i),
+                finished_at=NOW + timedelta(days=i),
+                status="ok",
+                fetched=10 + i,
+                changed=0,
+                parsed=0,
+                parse_errors=0,
+            )
+        )
+    rows = runs.history("s", NOW + timedelta(days=1), before_run="h2")
+    assert [r.fetched for r in rows] == [11]

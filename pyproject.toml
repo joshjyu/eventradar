@@ -35,6 +35,10 @@ meetup = "eventradar.sources.platforms.meetup:MeetupSource"
 [project.entry-points."eventradar.geocoders"]
 census = "eventradar.geo.geocode.providers.census:CensusGeocoder"
 
+[project.entry-points."eventradar.alerters"]
+github-issue = "eventradar.health.alerts.github_issue:GitHubIssueAlerter"
+log = "eventradar.health.alerts.log:LogAlerter"
+
 [project.entry-points."eventradar.blob"]
 local = "eventradar.storage.blob.local:LocalBlobStore"
 s3 = "eventradar.storage.blob.s3:S3BlobStore"

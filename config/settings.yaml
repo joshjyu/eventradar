@@ -46,3 +46,13 @@ environments:
         bucket: "${R2_PUBLIC_BUCKET}"
         access_key_id: "${R2_ACCESS_KEY_ID}"
         secret_access_key: "${R2_SECRET_ACCESS_KEY}"
+    # Source health problems become GitHub issues labeled source-health.
+    # The variables are set by GitHub Actions; GITHUB_TOKEN is the job's
+    # short-lived token.
+    alerts:
+      provider: github-issue
+      options:
+        repository: "${GITHUB_REPOSITORY}"
+        token_env: GITHUB_TOKEN
+        label: source-health
+        run_url: "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

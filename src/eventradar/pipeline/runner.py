@@ -1,6 +1,7 @@
 """Run orchestrator: lock, load state, run stages, publish, save state."""
 
 import logging
+import os
 import sqlite3
 import tempfile
 from collections.abc import Iterator
@@ -17,8 +18,15 @@ from eventradar.config.schema import (
     ConfigBundle,
     EnvironmentSettings,
     ProfileConfig,
+    SourceConfig,
 )
 from eventradar.domain.ids import IdFactory, new_event_id
+from eventradar.health.monitor import (
+    HealthChange,
+    build_alerter,
+    probe_due,
+    update_health,
+)
 from eventradar.http import HttpClient
 from eventradar.pipeline.classify import classify_kinds
 from eventradar.pipeline.enrich import EnrichStats, build_geocoder, enrich
@@ -37,6 +45,8 @@ from eventradar.storage.repositories import (
     RawRecordRepository,
     RunRepository,
     SourceRunRow,
+    SourceState,
+    SourceStateRepository,
     transaction,
 )
 
@@ -68,6 +78,7 @@ class RunSummary:
     profiles: dict[str, dict[str, int]] = field(default_factory=dict)
     enrich: EnrichStats | None = None
     merged: int = 0
+    health: list[HealthChange] = field(default_factory=list)
 
 
 def environment(bundle: ConfigBundle, name: str) -> EnvironmentSettings:
@@ -190,15 +201,74 @@ def _status(rows: list[SourceRunRow]) -> str:
     """
     Summarize source outcomes into a run status.
 
+    Sources skipped because health checks disabled them do not count.
+
     Parameters:
       rows: Per-source metrics.
     Returns:
       `ok`, `degraded`, or `failed`.
     """
-    failed = sum(r.status != "ok" for r in rows)
-    if rows and failed == len(rows):
+    active = [r for r in rows if r.status != "disabled"]
+    failed = sum(r.status != "ok" for r in active)
+    if active and failed == len(active):
         return "failed"
     return "degraded" if failed else "ok"
+
+
+def _select_sources(
+    bundle: ConfigBundle, conn: sqlite3.Connection, now: datetime
+) -> tuple[list[SourceConfig], list[str]]:
+    """
+    Split enabled sources into those to fetch and those health disabled.
+
+    A disabled source is fetched again when its weekly probe is due.
+
+    Parameters:
+      bundle: Loaded config.
+      conn: State database.
+      now: Run time.
+    Returns:
+      (sources to fetch, ids of skipped sources).
+    """
+    states = SourceStateRepository(conn)
+    active: list[SourceConfig] = []
+    skipped: list[str] = []
+    for source in bundle.enabled_sources():
+        state = states.get(source.id)
+        if state.status == "disabled" and not probe_due(state, now):
+            skipped.append(source.id)
+        else:
+            active.append(source)
+    return active, skipped
+
+
+def _record_disabled(
+    runs: RunRepository, run_id: str, source_id: str, now: datetime
+) -> SourceRunRow:
+    """
+    Record that a disabled source was skipped this run.
+
+    Parameters:
+      runs: Run repository.
+      run_id: Current run.
+      source_id: Skipped source.
+      now: Run time.
+    Returns:
+      The recorded row.
+    """
+    row = SourceRunRow(
+        run_id=run_id,
+        source_id=source_id,
+        started_at=now,
+        finished_at=now,
+        status="disabled",
+        fetched=0,
+        changed=0,
+        parsed=0,
+        parse_errors=0,
+    )
+    runs.record_source(row)
+    return row
 
 
 async def run(
@@ -241,13 +311,28 @@ async def run(
                 now=now,
                 previous=RawRecordRepository(conn).latest_one,
             )
-            results = await fetch_all(bundle.enabled_sources(), ctx)
+            active, skipped = _select_sources(bundle, conn, now)
+            results = await fetch_all(active, ctx)
             summary.sources = [
                 ingest(conn, result, run_id, now, events) for result in results
+            ]
+            summary.sources += [
+                _record_disabled(runs, run_id, source_id, now)
+                for source_id in skipped
             ]
             geo = bundle.settings.geo
             summary.enrich = await enrich(
                 conn, events, build_geocoder(geo), http, now, geo
+            )
+            artifact_dir = os.environ.get("EVENTRADAR_ARTIFACT_DIR")
+            summary.health = await update_health(
+                conn,
+                bundle,
+                summary.sources,
+                now,
+                build_alerter(env.alerts),
+                http,
+                Path(artifact_dir) if artifact_dir else None,
             )
         summary.merged = resolve(conn, events, now)
         defaults = {i: s.default_kinds for i, s in bundle.sources.items()}
@@ -326,3 +411,67 @@ def replay(
             bundle.settings.run.snapshot_retention,
         )
     return written
+
+
+def source_health(bundle: ConfigBundle, env_name: str) -> list[SourceState]:
+    """
+    Read every configured source's health state.
+
+    Parameters:
+      bundle: Loaded config.
+      env_name: Environment whose state is read.
+    Returns:
+      States in source id order.
+    """
+    env = environment(bundle, env_name)
+    state = build_blob(env.state)
+    ttl = timedelta(seconds=bundle.settings.run.lock_ttl_s)
+    with open_state(state, f"health-{ULID()}", ttl) as (conn, _path):
+        states = SourceStateRepository(conn)
+        return [states.get(source_id) for source_id in sorted(bundle.sources)]
+
+
+def enable_source(
+    bundle: ConfigBundle,
+    env_name: str,
+    source_id: str,
+    now: datetime | None = None,
+) -> SourceState:
+    """
+    Mark a source healthy again, e.g. after fixing its adapter.
+
+    Its open alert is closed by the next run that passes its checks.
+
+    Parameters:
+      bundle: Loaded config.
+      env_name: Environment whose state is changed.
+      source_id: Source to re-enable.
+      now: Change time.
+    Returns:
+      The new state.
+    """
+    env = environment(bundle, env_name)
+    now = (now or datetime.now(UTC)).astimezone(UTC)
+    state = build_blob(env.state)
+    ttl = timedelta(seconds=bundle.settings.run.lock_ttl_s)
+    owner = f"enable-{ULID()}"
+    with open_state(state, owner, ttl) as (conn, path):
+        states = SourceStateRepository(conn)
+        current = states.get(source_id)
+        updated = SourceState(
+            source_id=source_id,
+            status="healthy",
+            alerted=current.alerted,
+            last_probe=current.last_probe,
+        )
+        with transaction(conn):
+            states.put(updated, now)
+        save_state(
+            state,
+            conn,
+            path,
+            now,
+            owner,
+            bundle.settings.run.snapshot_retention,
+        )
+    return updated

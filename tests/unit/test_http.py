@@ -185,3 +185,20 @@ def test_site_key_groups_subdomains(host: str, key: str) -> None:
     from eventradar.http.ratelimit import site_key
 
     assert site_key(host) == key
+
+
+@respx.mock
+async def test_send_json_without_retry_makes_one_attempt() -> None:
+    """Non-idempotent requests are sent once even on server errors."""
+    route = respx.patch("https://api.example.test/issues/1").mock(
+        return_value=httpx.Response(503)
+    )
+    async with HttpClient(_settings()) as http:
+        with pytest.raises(HttpError, match=r"PATCH .* HTTP 503"):
+            await http.send_json(
+                "PATCH",
+                "https://api.example.test/issues/1",
+                {"state": "closed"},
+                retry=False,
+            )
+    assert route.call_count == 1

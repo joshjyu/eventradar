@@ -37,11 +37,19 @@ class BlobSettings(_Strict):
     options: dict[str, Any] = Field(default_factory=dict)
 
 
+class ProviderSettings(_Strict):
+    """Selects a plugin implementation and its options."""
+
+    provider: str
+    options: dict[str, Any] = Field(default_factory=dict)
+
+
 class EnvironmentSettings(_Strict):
     """Backends for one deployment environment."""
 
     state: BlobSettings
     publish: BlobSettings | None = None
+    alerts: ProviderSettings = ProviderSettings(provider="log")
 
 
 class RunSettings(_Strict):
@@ -50,13 +58,6 @@ class RunSettings(_Strict):
     lock_ttl_s: int = Field(default=3600, ge=60)
     snapshot_retention: int = Field(default=14, ge=1)
     raw_history_days: int = Field(default=30, ge=1)
-
-
-class ProviderSettings(_Strict):
-    """Selects a plugin implementation and its options."""
-
-    provider: str
-    options: dict[str, Any] = Field(default_factory=dict)
 
 
 class GeoSettings(_Strict):
@@ -82,8 +83,17 @@ class Settings(_Strict):
 class SloSettings(_Strict):
     """Health thresholds for a source."""
 
+    # Unhealthy when a run fetches fewer records than this share of the
+    # median over the window.
     min_yield_ratio: float = Field(default=0.3, ge=0, le=1)
     window_days: int = Field(default=7, ge=1)
+    # Runs needed in the window before the yield rule applies.
+    min_history_runs: int = Field(default=3, ge=1)
+    # Unhealthy when more than this share of changed records fail to parse.
+    max_parse_error_ratio: float = Field(default=0.5, ge=0, le=1)
+    # Consecutive unhealthy runs before alerting, and before disabling.
+    alert_after_runs: int = Field(default=2, ge=1)
+    disable_after_runs: int = Field(default=7, ge=1)
 
 
 class SourceConfig(_Strict):
