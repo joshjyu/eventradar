@@ -82,7 +82,19 @@ pairs:
     same: true
     a: {title: "AI Entrepreneur Weekend!", start: "2026-10-10T15:30:00Z", lat: 33.7920, lon: -117.8580}
     b: {title: "Entrepreneur Launchpad Weekend 10/10/26 - 10/11/26", start: "2026-10-10T15:30:00Z", lat: 33.7920, lon: -117.8580}
+  - note: same numbered session, two platforms place the venue 9.5 km apart
+    same: true
+    a: {title: "OCTW MasterMinds Startup Accelerator Workshop #73 10/22/26", start: "2026-10-23T00:00:00Z", lat: 33.6846, lon: -117.8265}
+    b: {title: "OCTW MasterMinds Startup Accelerator Workshop #73", start: "2026-10-23T00:00:00Z", lat: 33.6403, lon: -117.7382}
   # --- different events -------------------------------------------------
+  - note: consecutive numbered sessions at the same time, 9.5 km apart
+    same: false
+    a: {title: "Founder Workshop #73", start: "2026-10-23T00:00:00Z", lat: 33.6846, lon: -117.8265}
+    b: {title: "Founder Workshop #74", start: "2026-10-23T00:00:00Z", lat: 33.6403, lon: -117.7382}
+  - note: same numbered title and time, different metro (95 km)
+    same: false
+    a: {title: "Startup Grind #12", start: "2026-10-23T00:00:00Z", lat: 34.0522, lon: -118.2437}
+    b: {title: "Startup Grind #12", start: "2026-10-23T00:00:00Z", lat: 33.1959, lon: -117.3795}
   - note: similar titles 3 km apart, same evening
     same: false
     a: {title: "AI Builders Meetup", start: "2026-10-09T01:00:00Z", lat: 33.6846, lon: -117.8265}
