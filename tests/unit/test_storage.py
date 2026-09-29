@@ -289,3 +289,34 @@ def test_geocode_cache_and_missing_locations(
         NOW,
     )
     assert [a for _, a in repo.missing_locations(NOW)] == ["1 Main St"]
+
+
+def test_cancellation_from_any_source_sticks(
+    conn: sqlite3.Connection,
+) -> None:
+    """A lower-priority source or a merged duplicate can cancel an event."""
+    from eventradar.domain.enums import EventStatus
+
+    ids = iter(["E1", "E2", "E3"])
+    repo = EventRepository(
+        conn, id_factory=lambda: next(ids), priorities={"src-b": 90}
+    )
+    url = "https://events.example.test/e/1"
+    repo.upsert_draft(_draft("x", source_id="src-b", url=url), "h", NOW)
+    repo.upsert_draft(
+        _draft("x", url=url, status=EventStatus.CANCELLED), "h", NOW
+    )
+    repo.upsert_draft(_draft("y"), "h", NOW)
+    repo.upsert_draft(
+        _draft("z", source_id="src-c", status=EventStatus.CANCELLED),
+        "h",
+        NOW,
+    )
+    repo.merge("E3", "E2", NOW)
+    for event_id in ("E1", "E2"):
+        repo.link_profile(event_id, "p", NOW)
+    statuses = {e.event_id: e.status for e in repo.upcoming("p", NOW)}
+    assert statuses == {
+        "E1": EventStatus.CANCELLED,
+        "E2": EventStatus.CANCELLED,
+    }

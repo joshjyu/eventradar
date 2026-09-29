@@ -466,7 +466,8 @@ class EventRepository:
 
         The leading source (the current primary, or a higher-priority one)
         replaces values but never erases a known value with a missing one;
-        other sources only fill gaps.
+        other sources only fill gaps, except that any source can mark the
+        event cancelled.
 
         Parameters:
           draft: Parsed draft.
@@ -493,6 +494,13 @@ class EventRepository:
                 params.extend([value, value] if leads else [value])
             elif leads:
                 sets.append(f"{column} = COALESCE(?, {column})")
+                params.append(value)
+            elif column == "status":
+                # Any source reporting a cancellation is believed.
+                sets.append(
+                    "status = CASE WHEN ? = 'cancelled' THEN 'cancelled' "
+                    "ELSE status END"
+                )
                 params.append(value)
             else:
                 sets.append(f"{column} = COALESCE({column}, ?)")
@@ -640,30 +648,56 @@ class EventRepository:
         Fold one event into another; the loser's id becomes an alias.
 
         Provenance and profile membership move to the survivor, the
-        survivor's gaps are filled from the loser, and the earliest
-        `first_seen` is kept.
+        survivor's gaps are filled from the loser (or its values win, if its
+        source has higher priority), a cancellation from either side sticks,
+        and the earliest `first_seen` is kept.
 
         Parameters:
           loser: Event id to retire.
           survivor: Event id to keep.
           now: Merge time.
         """
-        # Column names come from a constant, never from input.
-        fills = ", ".join(
-            f"{c} = COALESCE({c}, "  # noqa: S608
-            f"(SELECT {c} FROM events WHERE event_id = ?))"
-            for c in _EVENT_COLUMNS
-            if c not in {"title", "start_utc", "kinds"}
+        primaries = dict(
+            self._conn.execute(
+                "SELECT event_id, primary_source FROM events "
+                "WHERE event_id IN (?, ?)",
+                (loser, survivor),
+            ).fetchall()
         )
-        fill_count = len(_EVENT_COLUMNS) - 3
+        # A higher-priority loser supplies the values; otherwise it only
+        # fills the survivor's gaps. Column names come from a constant.
+        loser_leads = self._priority(primaries.get(loser)) > self._priority(
+            primaries.get(survivor)
+        )
+        columns = [c for c in _EVENT_COLUMNS if c != "kinds"]
+        if not loser_leads:
+            columns = [c for c in columns if c not in {"title", "start_utc"}]
+        pick = (
+            "COALESCE((SELECT {c} FROM events WHERE event_id = ?), {c})"
+            if loser_leads
+            else "COALESCE({c}, (SELECT {c} FROM events WHERE event_id = ?))"
+        )
+        fills = ", ".join(f"{c} = " + pick.format(c=c) for c in columns)
+        primary = primaries.get(loser) if loser_leads else None
         self._conn.execute(
             f"UPDATE events SET {fills}, "  # noqa: S608
+            "primary_source = COALESCE(?, primary_source), "
+            "status = CASE WHEN (SELECT status FROM events "
+            "WHERE event_id = ?) = 'cancelled' THEN 'cancelled' "
+            "ELSE status END, "
             "first_seen = MIN(first_seen, "
             "(SELECT first_seen FROM events WHERE event_id = ?)), "
             "last_seen = MAX(last_seen, "
             "(SELECT last_seen FROM events WHERE event_id = ?)) "
             "WHERE event_id = ?",
-            (*([loser] * fill_count), loser, loser, survivor),
+            (
+                *([loser] * len(columns)),
+                primary,
+                loser,
+                loser,
+                loser,
+                survivor,
+            ),
         )
         self._conn.execute(
             "UPDATE event_sources SET event_id = ? WHERE event_id = ?",
