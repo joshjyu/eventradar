@@ -2,9 +2,14 @@ version: 1
 
 # In-person hackathons listed on Devpost, worldwide. Region filtering (M5)
 # selects the ones in each profile's region.
+#
+# Disabled: Devpost answers hackathon pages from cloud datacenter IPs
+# (e.g. GitHub-hosted runners) with an AWS WAF challenge instead of the
+# page.
 sources:
   - id: devpost-in-person
     adapter: devpost
+    enabled: false
     priority: 60
     default_kinds: [hackathon]
     params:
