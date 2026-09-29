@@ -6,6 +6,7 @@ sources:
   - id: devpost-in-person
     adapter: devpost
     priority: 60
+    default_kinds: [hackathon]
     params:
       challenge_types: [in-person]
       statuses: [upcoming, open]
