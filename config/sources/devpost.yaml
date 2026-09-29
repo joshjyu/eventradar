@@ -1,6 +1,6 @@
 version: 1
 
-# In-person hackathons listed on Devpost, worldwide. Region filtering (M5)
+# In-person hackathons listed on Devpost, worldwide. Region filtering
 # selects the ones in each profile's region.
 #
 # Disabled: Devpost answers hackathon pages from cloud datacenter IPs

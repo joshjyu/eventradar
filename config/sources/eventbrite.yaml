@@ -3,7 +3,7 @@ version: 1
 # Official Eventbrite API v3: live events of curated organizers. Needs a
 # personal OAuth token in EVENTBRITE_TOKEN (see docs/security.md); disabled
 # until that secret exists. Several organizers run events nationwide, so
-# region filtering (M5) decides what reaches each profile.
+# region filtering decides what reaches each profile.
 sources:
   - id: eventbrite-tech-organizers
     adapter: eventbrite

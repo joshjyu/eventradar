@@ -1,6 +1,8 @@
 # Published API (v1)
 
-Static JSON served from the public bucket. Breaking changes ship under
+Static files published to the feed bucket and served same-origin by the
+site, e.g. `https://eventsradar.pages.dev/v1/socal-tech/events.json`
+(only the file names below are served). Breaking changes ship under
 `/v2/`; `/v1/` only changes additively (enforced by
 `tests/golden/test_schema_compat.py`).
 
@@ -19,12 +21,16 @@ Feed document: `schema_version`, `profile`, `generated_at`, `count`,
 same event, they merge into the older `event_id`, and `sources` lists
 every posting.
 
-`kinds` combines what sources report (e.g. Devpost: hackathon) with
+`kinds` combines what sources report (e.g. MLH: hackathon) with
 title rules from `config/kinds.yaml`; it may be empty.
 
 Profile membership: an event is in a profile when it is in the region
 (by coordinates, or from a region-trusted source), not online unless the
 profile includes online events, and on the topic (see ADR 0008).
+
+`lat`/`lon` come from the source, from geocoding the address, or, when
+the address names only a U.S. city, from that city's centroid; treat
+them as approximate.
 
 `organizer` is the organizing organization when a source names one; it is
 never a person (ADR 0011).

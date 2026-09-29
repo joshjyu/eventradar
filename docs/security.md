@@ -4,11 +4,12 @@
 
 ### Cloudflare R2
 
-1. Create two buckets: `eventradar-state` (private) and
-   `eventradar-public`.
-2. Expose only `eventradar-public`, preferably through a custom domain
-   (the `r2.dev` URL is rate-limited and meant for development). Never
-   enable public access on the state bucket.
+1. Create two private buckets: one for state, one for published feeds.
+   Keep their names out of the repository; workflows read them from
+   secrets.
+2. Leave public access off on both. The site serves feeds through a
+   Pages binding to the feed bucket (see the website runbook), so no
+   `r2.dev` URL or bucket custom domain is needed.
 3. Create an R2 API token:
    - Permission: **Object Read & Write**
    - Scope: **Apply to specific buckets only** -> both buckets
@@ -29,16 +30,19 @@
    - Allowed actions: owner plus selected: `actions/*`,
      `astral-sh/setup-uv@*`.
 4. **Ruleset for `main`**: require a pull request, require status checks
-   `test` and `secrets-scan`, block force pushes and deletion.
+   `test`, `worker`, `site`, and `secrets-scan`, block force pushes and
+   deletion.
 5. **Code security**: enable Dependabot alerts and security updates.
 6. Two-factor authentication on GitHub and Cloudflare.
 
 ### Local
 
 - `uv run pre-commit install` enables gitleaks and lint hooks.
-- Do not keep production credentials locally. For local testing against
-  R2, create a separate token scoped to separate dev buckets and put it in
-  `.env` (gitignored), loaded with `set -a; . ./.env; set +a`.
+- Prefer not to keep production credentials locally. Only a few manual
+  commands need them (e.g. `health enable --env production`); for those,
+  keep them in `.env` (gitignored) and load it with
+  `set -a; . ./.env; set +a`. For experiments, use a separate token
+  scoped to separate dev buckets.
 
 ## Rotation
 
@@ -55,10 +59,11 @@ The daily job files `source-health` issues with its own short-lived
 `GITHUB_TOKEN`, granted `issues: write` for that job only. No personal
 token is involved.
 
-## Eventbrite API token
+## Eventbrite API token (optional)
 
-The `eventbrite` adapter reads a personal OAuth token from
-`EVENTBRITE_TOKEN`. It only reads public event data.
+The `eventbrite` adapter is disabled until a token exists. It reads a
+personal OAuth token from `EVENTBRITE_TOKEN` and only reads public event
+data.
 
 1. Sign in at eventbrite.com -> account menu -> Developer Links -> API
    Keys -> Create API key. Copy the **Private token**.

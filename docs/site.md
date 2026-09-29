@@ -2,7 +2,9 @@
 
 `site/` is a static page plus one Pages Function:
 
-- `site/public/`: the page (no build step, no external assets).
+- `site/public/`: the page and a 404 page (no build step, no external
+  assets). Event data is inserted as text only, never as HTML, and
+  `_headers` sets a strict Content Security Policy.
 - `site/functions/v1/[[path]].js`: serves `/v1/...` feed files from the
   public R2 bucket through a binding, same-origin with the page. Only
   published file names are served.
@@ -29,7 +31,16 @@
 5. **Check** `https://<project>.pages.dev` and
    `https://<project>.pages.dev/v1/socal-tech/manifest.json`.
 
-## Custom domain from another Cloudflare account
+## The page
+
+- Search (title, venue, address, organizer), kind chips, a "New this
+  week" toggle, and a page size of 10, 25 (default), 50, or all.
+- The view is kept in the URL so it can be shared: `q`, `kind`,
+  `new=1`, `show` (`10`, `50`, `all`), `page`, and `profile` (another
+  published profile; default `socal-tech`).
+- Subscribe links point at the profile's `.ics`, RSS, and JSON feeds.
+
+## Custom domain from another Cloudflare account (optional)
 
 The domain's zone lives on a different Cloudflare account than the
 project, so that account acts as a plain DNS provider:
@@ -53,8 +64,11 @@ feeds, and API are then served only through the site.
 ## Local preview
 
 ```bash
-uv run eventradar run --no-publish
+uv run eventradar run
 EVENTRADAR_DATA_DIR=.eventradar/public uv run python scripts/serve_site.py 8788
 ```
+
+`run` (the `local` environment) writes feeds to `.eventradar/public`;
+`--no-publish` would skip that. Then open http://localhost:8788.
 
 Tests: `node --test site/tests/*.test.mjs`
