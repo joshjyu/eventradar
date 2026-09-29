@@ -74,6 +74,14 @@ pairs:
     same: true
     a: {title: "Hyphen Hacks", start: "2026-10-10T16:00:00Z", lat: 33.6405, lon: -117.8443}
     b: {title: "Hyphen-Hacks", start: "2026-10-10T16:00:00Z", lat: 33.6731, lon: -117.8340}
+  - note: one organizer network, varied titles, same venue and minute
+    same: true
+    a: {title: "Tech & Business Networking in Los Angeles", start: "2026-10-08T02:00:00Z", lat: 34.0440, lon: -118.2570}
+    b: {title: "Tech Networking Event by Startup Valley in Los Angeles", start: "2026-10-08T02:00:00Z", lat: 34.0440, lon: -118.2570}
+  - note: series renamed between groups, same venue and minute
+    same: true
+    a: {title: "AI Entrepreneur Weekend!", start: "2026-10-10T15:30:00Z", lat: 33.7920, lon: -117.8580}
+    b: {title: "Entrepreneur Launchpad Weekend 10/10/26 - 10/11/26", start: "2026-10-10T15:30:00Z", lat: 33.7920, lon: -117.8580}
   # --- different events -------------------------------------------------
   - note: similar titles 3 km apart, same evening
     same: false
