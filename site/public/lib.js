@@ -9,6 +9,7 @@ const PLATFORMS = [
   ["luma-", "Luma"],
   ["meetup-", "Meetup"],
   ["devpost-", "Devpost"],
+  ["mlh-", "MLH"],
   ["eventbrite-", "Eventbrite"],
   ["site-", "Event website"],
 ];

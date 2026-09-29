@@ -67,9 +67,10 @@ test("platform names are deduplicated", () => {
       { source_id: "luma-la-tech-week" },
       { source_id: "luma-la-city" },
       { source_id: "meetup-socal-tech" },
+      { source_id: "mlh-hackathons" },
     ],
   });
-  assert.deepEqual(platforms(e), ["Luma", "Meetup"]);
+  assert.deepEqual(platforms(e), ["Luma", "Meetup", "MLH"]);
 });
 
 test("filters combine search, kind, and recency", () => {
