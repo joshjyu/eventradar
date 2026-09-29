@@ -16,7 +16,8 @@ and links the run.
    ```
 
 3. Decide what changed:
-   - **Blocked or gone** (HTTP 403/404/405, robots.txt): set
+   - **Blocked or gone** (HTTP 403/404/405, robots.txt, or
+     `bot challenge`): set
      `enabled: false` in the source's config and note why, or find a
      sanctioned alternative (an official API).
    - **Layout or format drift** (parse errors, missing fields): capture a
@@ -30,7 +31,8 @@ and links the run.
    - **Temporary outage:** nothing to do. The source is retried and the
      issue closes itself when it passes again.
 4. After a fix is merged, re-enable immediately instead of waiting for the
-   weekly probe (production state needs the R2 credentials in `.env`):
+   weekly probe. This reads production state, so it needs R2 credentials
+   in the gitignored `.env` (see the security runbook):
 
    ```bash
    uv run eventradar health enable <source-id> --env production

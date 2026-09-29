@@ -1,6 +1,8 @@
 # 0004: JSON-LD via listing hubs, refetch on change
 
-- Status: accepted
+- Status: accepted; the Eventbrite hub sources are disabled (Eventbrite
+  answers datacenter IPs with HTTP 405). The approach still serves
+  `links` discovery (OC Tech Week).
 - Date: 2026-09-28
 
 ## Context

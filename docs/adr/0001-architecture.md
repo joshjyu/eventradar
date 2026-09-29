@@ -1,6 +1,8 @@
 # 0001: Structured-layer retrieval, single scheduled job
 
-- Status: accepted; search discovery superseded by 0010
+- Status: accepted; search discovery superseded by 0010; feeds are
+  served through the site's bucket binding, not a public bucket URL
+  (docs/site.md)
 - Date: 2026-09-26
 
 ## Context

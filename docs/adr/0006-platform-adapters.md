@@ -1,6 +1,8 @@
 # 0006: Platform adapters for Meetup, Devpost, and Eventbrite
 
-- Status: accepted
+- Status: accepted; Devpost disabled on 2026-09-29 (its hackathon pages
+  answer GitHub's runners with an AWS WAF challenge), hackathons now come
+  from MLH (ADR 0012); Eventbrite still awaits a token.
 - Date: 2026-09-29
 
 ## Context

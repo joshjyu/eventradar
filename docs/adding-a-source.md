@@ -17,15 +17,15 @@
    (`urls`):
 
    ```yaml
-   - id: eventbrite-riverside-tech
+   - id: example-riverside-tech
      adapter: jsonld
      params:
        discovery:
          type: hub                 # or: type: urls, urls: [...]
          pages: 2                  # hard cap; `{page}` marks pagination
          urls:
-           - "https://www.eventbrite.com/d/ca--riverside/science-and-tech--events/?page={page}"
-       url_pattern: '^https://www\.eventbrite\.com/e/'
+           - "https://events.example.com/riverside/tech?page={page}"
+       url_pattern: '^https://events\.example\.com/e/'
        default_tz: America/Los_Angeles
        max_events: 100             # pages fetched per run, at most
        refresh_days: 7             # unchanged pages refetched this often
@@ -46,7 +46,11 @@
    ```
 
    Check the site's `robots.txt` first; the client enforces it and will
-   report blocked URLs as fetch errors.
+   report blocked URLs as fetch errors. Also run `source test` from a
+   cloud machine if you can: some sites (Eventbrite, Devpost) answer
+   datacenter IPs, including GitHub's runners, with an error or a bot
+   challenge. The client reports challenges as fetch errors; do not work
+   around them.
 
    Optional source settings:
    - `priority` (0-100, default 50): higher wins when sources describe
@@ -65,15 +69,19 @@
 
 ## Platform adapters
 
-| Adapter | Discovery | Credentials |
-|---|---|---|
-| `meetup` | GraphQL `eventSearch` per area x keyword, filtered by topic category | none |
-| `devpost` | Listing API, then each hackathon page's JSON-LD | none |
-| `mlh` | Season pages' embedded page data (current and next season) | none |
-| `eventbrite` | Official API v3, live events per organizer | `EVENTBRITE_TOKEN` |
+| Adapter | Discovery | Credentials | In use |
+|---|---|---|---|
+| `meetup` | GraphQL `eventSearch` per area x keyword, filtered by topic category | none | yes |
+| `mlh` | Season pages' embedded page data (current and next season) | none | yes |
+| `devpost` | Listing API, then each hackathon page's JSON-LD | none | no: pages challenge datacenter IPs |
+| `eventbrite` | Official API v3, live events per organizer | `EVENTBRITE_TOKEN` | no: needs a token |
 
 Meetup's keyword search is a loose semantic match; set
 `topic_category_id` (546 is Technology) to keep results on topic.
+
+Addresses: write country names out ("Toronto, Ontario, Canada"). The
+enrich stage reads a trailing two-letter code as a U.S. state, and many
+country codes (CA, IN, GA) are also state abbreviations.
 
 ## New adapter
 
