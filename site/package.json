@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Static events page and Pages Function; tests run with node --test."
+}
