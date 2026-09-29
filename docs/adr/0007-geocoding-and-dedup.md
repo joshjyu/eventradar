@@ -29,6 +29,9 @@
   (geocoding noise) or without coordinates, on token-sort similarity
   >= 92. Titles equal after removing spaces always match. Duplicates merge
   into the oldest event; retired ids are kept as aliases.
+- Events placed at a city centroid are compared as if unlocated (the
+  strict title rule, at any distance). A source's own coordinates replace
+  a centroid, and merges keep the more precise location.
 - Field precedence: each source has a `priority`. The leading source's
   values win but never erase known values; others only fill gaps. A
   cancellation reported by any source sticks.

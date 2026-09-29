@@ -160,7 +160,7 @@ async def enrich(
             located.append((event_id, point))
     with transaction(conn):
         for event_id, point in located:
-            events.set_location(event_id, point.lat, point.lon)
+            events.set_location(event_id, point.lat, point.lon, point.precision)
         zoned = 0
         for event_id, lat, lon in events.missing_zones(now):
             zone = zone_at(lat, lon)

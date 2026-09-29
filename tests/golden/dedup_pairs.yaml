@@ -30,6 +30,10 @@ pairs:
     same: true
     a: {title: "OCC Hacks", start: "2026-10-10T16:00:00Z", lat: 33.6695, lon: -117.9120}
     b: {title: "OCCHacks", start: "2026-10-10T16:00:00Z", lat: 33.6697, lon: -117.9118}
+  - note: one side placed at its city's centroid, 7 km from the venue
+    same: true
+    a: {title: "Build with AI Los Angeles 2026", start: "2026-11-07T17:00:00Z", lat: 34.0194, lon: -118.4108, approximate: true}
+    b: {title: "Build With AI - Los Angeles", start: "2026-11-07T17:00:00Z", lat: 34.0689, lon: -118.4452}
   - note: same page URL on both
     same: true
     a: {title: "AI Demo Night", start: "2026-10-15T01:00:00Z", url: "https://events.example.test/e/1"}
