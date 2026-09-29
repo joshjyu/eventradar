@@ -1,12 +1,8 @@
 name: daily
 
 on:
-  # Primary trigger: the Cloudflare Worker in workers/scheduler calls
-  # workflow_dispatch daily. This schedule is a fallback until the Worker is
-  # verified; GitHub disables it after 60 days without commits.
-  schedule:
-    # 13:17 UTC = 6:17am PT (PDT); off the top of the hour to avoid queueing.
-    - cron: "17 13 * * *"
+  # Started daily at 13:17 UTC by the Cloudflare Worker in workers/scheduler
+  # (see docs/scheduler.md), or manually from the Actions tab.
   workflow_dispatch:
 
 permissions:
