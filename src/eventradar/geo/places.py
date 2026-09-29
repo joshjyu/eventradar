@@ -49,7 +49,9 @@ def place_centroid(address: str) -> GeoPoint | None:
     Locate an American address by the centroid of its city.
 
     The address must end with `city, state`, optionally followed by a ZIP
-    code or a U.S. country name.
+    code or a U.S. country name. A trailing two-letter code is read as a
+    state, so adapters must write other countries' names out in full
+    ("Toronto, Ontario, Canada", not "..., CA").
 
     Parameters:
       address: One-line address, e.g. `Los Angeles, CA, US`.

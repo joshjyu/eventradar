@@ -1,0 +1,13 @@
+version: 1
+
+# Major League Hacking member hackathons, worldwide. Venues give only a
+# city, which the enrich stage places at the city's centroid; region
+# filtering then selects each profile's region. No `keep_region`: events
+# have no coordinates until enrich runs.
+sources:
+  - id: mlh-hackathons
+    adapter: mlh
+    priority: 60
+    default_kinds: [hackathon]
+    params:
+      seasons_ahead: 1
