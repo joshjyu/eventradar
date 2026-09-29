@@ -31,6 +31,20 @@
        refresh_days: 7             # unchanged pages refetched this often
    ```
 
+   For a site that links to its events on another platform (for example
+   a tech week's homepage linking to Luma pages), use `links` discovery;
+   `url_pattern` is required and selects which links are event pages:
+
+   ```yaml
+   - id: site-oc-tech-week
+     adapter: jsonld
+     params:
+       discovery:
+         type: links
+         urls: ["https://octechweek.com/"]
+       url_pattern: '^https://(luma\.com|lu\.ma)/[A-Za-z0-9-]+$'
+   ```
+
    Check the site's `robots.txt` first; the client enforces it and will
    report blocked URLs as fetch errors.
 
@@ -38,6 +52,9 @@
    - `priority` (0-100, default 50): higher wins when sources describe
      the same event differently.
    - `default_kinds`: kinds for its events when title rules find none.
+   - `keep_region`: drop events outside this region at ingest, for
+     sources (e.g. global community calendars) that mostly cover places
+     no profile needs.
 
 2. `uv run eventradar config validate`
 3. `uv run eventradar source test luma-oc-tech`

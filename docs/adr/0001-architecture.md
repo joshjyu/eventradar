@@ -1,6 +1,6 @@
 # 0001: Structured-layer retrieval, single scheduled job
 
-- Status: accepted
+- Status: accepted; search discovery superseded by 0010
 - Date: 2026-09-26
 
 ## Context
