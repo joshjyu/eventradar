@@ -37,11 +37,19 @@ class BlobSettings(_Strict):
     options: dict[str, Any] = Field(default_factory=dict)
 
 
+class ProviderSettings(_Strict):
+    """Selects a plugin implementation and its options."""
+
+    provider: str
+    options: dict[str, Any] = Field(default_factory=dict)
+
+
 class EnvironmentSettings(_Strict):
     """Backends for one deployment environment."""
 
     state: BlobSettings
     publish: BlobSettings | None = None
+    alerts: ProviderSettings = ProviderSettings(provider="log")
 
 
 class RunSettings(_Strict):
@@ -50,13 +58,6 @@ class RunSettings(_Strict):
     lock_ttl_s: int = Field(default=3600, ge=60)
     snapshot_retention: int = Field(default=14, ge=1)
     raw_history_days: int = Field(default=30, ge=1)
-
-
-class ProviderSettings(_Strict):
-    """Selects a plugin implementation and its options."""
-
-    provider: str
-    options: dict[str, Any] = Field(default_factory=dict)
 
 
 class GeoSettings(_Strict):
