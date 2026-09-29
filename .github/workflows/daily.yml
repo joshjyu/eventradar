@@ -18,6 +18,10 @@ jobs:
     timeout-minutes: 30
     # Secrets live only in this environment, which is restricted to `main`.
     environment: production
+    permissions:
+      contents: read
+      # Source health alerts are filed as issues.
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -34,6 +38,8 @@ jobs:
           R2_STATE_BUCKET: ${{ secrets.R2_STATE_BUCKET }}
           R2_PUBLIC_BUCKET: ${{ secrets.R2_PUBLIC_BUCKET }}
           EVENTBRITE_TOKEN: ${{ secrets.EVENTBRITE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENTRADAR_ARTIFACT_DIR: health-artifacts
         run: |
           if [ -n "$R2_ACCOUNT_ID" ]; then
             uv run eventradar run --env production
@@ -41,3 +47,11 @@ jobs:
             echo "::warning::R2 secrets not configured; dry run only"
             uv run eventradar run --env local --no-publish
           fi
+      - name: Upload health captures
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: health-captures
+          path: health-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
