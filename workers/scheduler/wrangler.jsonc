@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "eventradar-scheduler",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-28",
+  // Cron only: no public HTTP endpoint.
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": {
+    // 13:17 UTC = 6:17am PT (PDT).
+    "crons": ["17 13 * * *"]
+  },
+  "vars": {
+    "GITHUB_REPOSITORY": "joshjyu/eventradar",
+    "WORKFLOW_FILE": "daily.yml",
+    "WORKFLOW_REF": "main"
+  },
+  // GITHUB_TOKEN is a secret: `npx wrangler secret put GITHUB_TOKEN`.
+  "observability": { "enabled": true }
+}

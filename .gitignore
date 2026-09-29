@@ -219,3 +219,8 @@ __marimo__/
 
 # eventradar local state
 .eventradar/
+
+# Cloudflare Worker
+node_modules/
+.wrangler/
+.dev.vars*
