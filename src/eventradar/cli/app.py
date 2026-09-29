@@ -60,6 +60,8 @@ def run_cmd(
         "run_id": summary.run_id,
         "status": summary.status,
         "profiles": summary.profiles,
+        "merged": summary.merged,
+        "enrich": summary.enrich.__dict__ if summary.enrich else None,
         "sources": {
             r.source_id: {
                 "status": r.status,

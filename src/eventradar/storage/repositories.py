@@ -2,10 +2,10 @@
 
 import json
 import sqlite3
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from eventradar.domain.enums import AttendanceMode, EventKind, EventStatus
@@ -93,6 +93,84 @@ class SourceRunRow:
     parsed: int
     parse_errors: int
     error: str | None = None
+
+
+@dataclass(frozen=True)
+class ResolveCandidate:
+    """The fields dedup compares."""
+
+    event_id: str
+    title: str
+    start_utc: datetime
+    lat: float | None
+    lon: float | None
+    url: str | None
+
+
+@dataclass(frozen=True)
+class CachedGeocode:
+    """A stored geocoding result; `lat` is None for a recorded miss."""
+
+    lat: float | None
+    lon: float | None
+    precision: str | None
+    looked_up_at: datetime
+
+
+class GeocodeCacheRepository:
+    """Geocoding results keyed by normalized address."""
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        """
+        Bind to a connection.
+
+        Parameters:
+          conn: Open connection.
+        """
+        self._conn = conn
+
+    def get(self, key: str) -> CachedGeocode | None:
+        """
+        Read a cached result.
+
+        Parameters:
+          key: Normalized address.
+        Returns:
+          The cached result, or None if never looked up.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM geocode_cache WHERE address_key = ?", (key,)
+        ).fetchone()
+        if row is None:
+            return None
+        return CachedGeocode(
+            lat=row["lat"],
+            lon=row["lon"],
+            precision=row["precision"],
+            looked_up_at=from_db(row["looked_up_at"]),
+        )
+
+    def put(
+        self,
+        key: str,
+        point: tuple[float, float, str] | None,
+        provider: str,
+        now: datetime,
+    ) -> None:
+        """
+        Store a result or a miss.
+
+        Parameters:
+          key: Normalized address.
+          point: (lat, lon, precision), or None for a miss.
+          provider: Service that answered.
+          now: Lookup time.
+        """
+        lat, lon, precision = point or (None, None, None)
+        self._conn.execute(
+            "INSERT OR REPLACE INTO geocode_cache VALUES (?, ?, ?, ?, ?, ?)",
+            (key, lat, lon, precision, provider, to_db(now)),
+        )
 
 
 @dataclass(frozen=True)
@@ -305,7 +383,10 @@ class EventRepository:
     """Resolved events, their provenance, and profile membership."""
 
     def __init__(
-        self, conn: sqlite3.Connection, id_factory: IdFactory = new_event_id
+        self,
+        conn: sqlite3.Connection,
+        id_factory: IdFactory = new_event_id,
+        priorities: Mapping[str, int] | None = None,
     ) -> None:
         """
         Bind to a connection.
@@ -313,9 +394,11 @@ class EventRepository:
         Parameters:
           conn: Open connection.
           id_factory: Generates ids for new events.
+          priorities: Source id to precedence; higher wins field conflicts.
         """
         self._conn = conn
         self._new_id = id_factory
+        self._priorities = dict(priorities or {})
 
     def upsert_draft(
         self, draft: EventDraft, content_hash: str, now: datetime
@@ -330,7 +413,6 @@ class EventRepository:
         Returns:
           The event id and whether it was created.
         """
-        values = _draft_values(draft)
         existing = self._conn.execute(
             "SELECT event_id FROM event_sources "
             "WHERE source_id = ? AND native_id = ?",
@@ -338,36 +420,99 @@ class EventRepository:
         ).fetchone()
         if existing:
             event_id = existing["event_id"]
-            assignments = ", ".join(f"{c} = ?" for c in _EVENT_COLUMNS)
-            self._conn.execute(
-                f"UPDATE events SET {assignments}, last_seen = ? "  # noqa: S608
-                "WHERE event_id = ?",
-                (*values, to_db(now), event_id),
-            )
             self._conn.execute(
                 "UPDATE event_sources SET url = ?, content_hash = ? "
                 "WHERE source_id = ? AND native_id = ?",
                 (draft.url, content_hash, draft.source_id, draft.native_id),
             )
+            self._apply(draft, event_id, now)
             return UpsertResult(event_id, created=False)
         match = self._same_page(draft)
         if match:
             self._link_source(draft, content_hash, match)
-            self._conn.execute(
-                "UPDATE events SET last_seen = ? WHERE event_id = ?",
-                (to_db(now), match),
-            )
+            self._apply(draft, match, now)
             return UpsertResult(match, created=False)
         event_id = self._new_id()
         columns = ", ".join(("event_id", *_EVENT_COLUMNS))
-        marks = ", ".join("?" * (len(_EVENT_COLUMNS) + 3))
+        marks = ", ".join("?" * (len(_EVENT_COLUMNS) + 4))
         self._conn.execute(
-            f"INSERT INTO events ({columns}, first_seen, last_seen) "  # noqa: S608
-            f"VALUES ({marks})",
-            (event_id, *values, to_db(now), to_db(now)),
+            f"INSERT INTO events ({columns}, first_seen, last_seen, "  # noqa: S608
+            f"primary_source) VALUES ({marks})",
+            (
+                event_id,
+                *_draft_values(draft),
+                to_db(now),
+                to_db(now),
+                draft.source_id,
+            ),
         )
         self._link_source(draft, content_hash, event_id)
         return UpsertResult(event_id, created=True)
+
+    def _priority(self, source_id: str | None) -> int:
+        """
+        Look up a source's precedence.
+
+        Parameters:
+          source_id: Source id.
+        Returns:
+          Configured priority, 50 when unset.
+        """
+        return self._priorities.get(source_id or "", 50)
+
+    def _apply(self, draft: EventDraft, event_id: str, now: datetime) -> None:
+        """
+        Write a draft into an existing event.
+
+        The leading source (the current primary, or a higher-priority one)
+        replaces values but never erases a known value with a missing one;
+        other sources only fill gaps, except that any source can mark the
+        event cancelled.
+
+        Parameters:
+          draft: Parsed draft.
+          event_id: Event to update.
+          now: Observation time.
+        """
+        row = self._conn.execute(
+            "SELECT primary_source FROM events WHERE event_id = ?",
+            (event_id,),
+        ).fetchone()
+        primary = row["primary_source"] if row else None
+        leads = primary in (None, draft.source_id) or self._priority(
+            draft.source_id
+        ) > self._priority(primary)
+        values = dict(zip(_EVENT_COLUMNS, _draft_values(draft), strict=True))
+        sets: list[str] = []
+        params: list[Any] = []
+        for column, value in values.items():
+            if column == "kinds":
+                keep_new = "? != '[]'" if leads else "kinds = '[]'"
+                sets.append(
+                    f"kinds = CASE WHEN {keep_new} THEN ? ELSE kinds END"
+                )
+                params.extend([value, value] if leads else [value])
+            elif leads:
+                sets.append(f"{column} = COALESCE(?, {column})")
+                params.append(value)
+            elif column == "status":
+                # Any source reporting a cancellation is believed.
+                sets.append(
+                    "status = CASE WHEN ? = 'cancelled' THEN 'cancelled' "
+                    "ELSE status END"
+                )
+                params.append(value)
+            else:
+                sets.append(f"{column} = COALESCE({column}, ?)")
+                params.append(value)
+        if leads:
+            sets.append("primary_source = ?")
+            params.append(draft.source_id)
+        self._conn.execute(
+            f"UPDATE events SET {', '.join(sets)}, last_seen = ? "  # noqa: S608
+            "WHERE event_id = ?",
+            (*params, to_db(now), event_id),
+        )
 
     def _same_page(self, draft: EventDraft) -> str | None:
         """
@@ -411,6 +556,189 @@ class EventRepository:
                 content_hash,
             ),
         )
+
+    def missing_locations(self, now: datetime) -> list[tuple[str, str]]:
+        """
+        List upcoming in-person events with an address but no coordinates.
+
+        Parameters:
+          now: Reference time.
+        Returns:
+          (event_id, address) pairs.
+        """
+        rows = self._conn.execute(
+            "SELECT event_id, address FROM events WHERE lat IS NULL "
+            "AND address IS NOT NULL AND attendance_mode != 'online' "
+            "AND COALESCE(end_utc, start_utc) >= ? ORDER BY start_utc",
+            (to_db(now),),
+        )
+        return [(r["event_id"], r["address"]) for r in rows]
+
+    def set_location(self, event_id: str, lat: float, lon: float) -> None:
+        """
+        Store coordinates found by geocoding.
+
+        Parameters:
+          event_id: Event id.
+          lat: Latitude.
+          lon: Longitude.
+        """
+        self._conn.execute(
+            "UPDATE events SET lat = ?, lon = ? WHERE event_id = ?",
+            (lat, lon, event_id),
+        )
+
+    def missing_zones(self, now: datetime) -> list[tuple[str, float, float]]:
+        """
+        List upcoming located events without a time zone.
+
+        Parameters:
+          now: Reference time.
+        Returns:
+          (event_id, lat, lon) triples.
+        """
+        rows = self._conn.execute(
+            "SELECT event_id, lat, lon FROM events WHERE tz IS NULL "
+            "AND lat IS NOT NULL AND COALESCE(end_utc, start_utc) >= ?",
+            (to_db(now),),
+        )
+        return [(r["event_id"], r["lat"], r["lon"]) for r in rows]
+
+    def set_zone(self, event_id: str, tz: str) -> None:
+        """
+        Store a time zone derived from coordinates.
+
+        Parameters:
+          event_id: Event id.
+          tz: IANA zone name.
+        """
+        self._conn.execute(
+            "UPDATE events SET tz = ? WHERE event_id = ?", (tz, event_id)
+        )
+
+    def resolve_candidates(self, now: datetime) -> list[ResolveCandidate]:
+        """
+        Load the upcoming events that dedup compares.
+
+        Parameters:
+          now: Reference time; events ended more than a day ago are skipped.
+        Returns:
+          Candidates ordered by start time, then id.
+        """
+        rows = self._conn.execute(
+            "SELECT event_id, title, start_utc, lat, lon, url, status "
+            "FROM events WHERE COALESCE(end_utc, start_utc) >= ? "
+            "ORDER BY start_utc, event_id",
+            (to_db(now - timedelta(days=1)),),
+        )
+        return [
+            ResolveCandidate(
+                event_id=r["event_id"],
+                title=r["title"],
+                start_utc=from_db(r["start_utc"]),
+                lat=r["lat"],
+                lon=r["lon"],
+                url=r["url"],
+            )
+            for r in rows
+        ]
+
+    def merge(self, loser: str, survivor: str, now: datetime) -> None:
+        """
+        Fold one event into another; the loser's id becomes an alias.
+
+        Provenance and profile membership move to the survivor, the
+        survivor's gaps are filled from the loser (or its values win, if its
+        source has higher priority), a cancellation from either side sticks,
+        and the earliest `first_seen` is kept.
+
+        Parameters:
+          loser: Event id to retire.
+          survivor: Event id to keep.
+          now: Merge time.
+        """
+        primaries = dict(
+            self._conn.execute(
+                "SELECT event_id, primary_source FROM events "
+                "WHERE event_id IN (?, ?)",
+                (loser, survivor),
+            ).fetchall()
+        )
+        # A higher-priority loser supplies the values; otherwise it only
+        # fills the survivor's gaps. Column names come from a constant.
+        loser_leads = self._priority(primaries.get(loser)) > self._priority(
+            primaries.get(survivor)
+        )
+        columns = [c for c in _EVENT_COLUMNS if c != "kinds"]
+        if not loser_leads:
+            columns = [c for c in columns if c not in {"title", "start_utc"}]
+        pick = (
+            "COALESCE((SELECT {c} FROM events WHERE event_id = ?), {c})"
+            if loser_leads
+            else "COALESCE({c}, (SELECT {c} FROM events WHERE event_id = ?))"
+        )
+        fills = ", ".join(f"{c} = " + pick.format(c=c) for c in columns)
+        primary = primaries.get(loser) if loser_leads else None
+        self._conn.execute(
+            f"UPDATE events SET {fills}, "  # noqa: S608
+            "primary_source = COALESCE(?, primary_source), "
+            "status = CASE WHEN (SELECT status FROM events "
+            "WHERE event_id = ?) = 'cancelled' THEN 'cancelled' "
+            "ELSE status END, "
+            "first_seen = MIN(first_seen, "
+            "(SELECT first_seen FROM events WHERE event_id = ?)), "
+            "last_seen = MAX(last_seen, "
+            "(SELECT last_seen FROM events WHERE event_id = ?)) "
+            "WHERE event_id = ?",
+            (
+                *([loser] * len(columns)),
+                primary,
+                loser,
+                loser,
+                loser,
+                survivor,
+            ),
+        )
+        self._conn.execute(
+            "UPDATE event_sources SET event_id = ? WHERE event_id = ?",
+            (survivor, loser),
+        )
+        self._conn.execute(
+            "INSERT INTO event_profiles (event_id, profile_id, first_seen) "
+            "SELECT ?, profile_id, first_seen FROM event_profiles "
+            "WHERE event_id = ? AND true "
+            "ON CONFLICT (event_id, profile_id) DO UPDATE SET "
+            "first_seen = MIN(first_seen, excluded.first_seen)",
+            (survivor, loser),
+        )
+        self._conn.execute(
+            "DELETE FROM event_profiles WHERE event_id = ?", (loser,)
+        )
+        self._conn.execute(
+            "UPDATE event_aliases SET event_id = ? WHERE event_id = ?",
+            (survivor, loser),
+        )
+        self._conn.execute(
+            "INSERT OR REPLACE INTO event_aliases VALUES (?, ?, ?)",
+            (loser, survivor, to_db(now)),
+        )
+        self._conn.execute("DELETE FROM events WHERE event_id = ?", (loser,))
+
+    def source_ids_for(self, event_id: str) -> list[str]:
+        """
+        List the sources that describe an event.
+
+        Parameters:
+          event_id: Event id.
+        Returns:
+          Source ids, sorted.
+        """
+        rows = self._conn.execute(
+            "SELECT DISTINCT source_id FROM event_sources WHERE event_id = ? "
+            "ORDER BY source_id",
+            (event_id,),
+        )
+        return [r[0] for r in rows]
 
     def mark_seen(
         self, source_id: str, native_ids: Iterable[str], now: datetime

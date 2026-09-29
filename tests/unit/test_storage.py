@@ -210,3 +210,113 @@ def test_prune_keeps_latest_and_recent_versions(
         ("1", '{"v": 3}'),
         ("2", '{"v": 0}'),
     ]
+
+
+def test_higher_priority_source_leads_and_gaps_are_filled(
+    conn: sqlite3.Connection,
+) -> None:
+    """The leading source wins conflicts; others only fill missing values."""
+    repo = EventRepository(conn, priorities={"src-a": 40, "src-b": 70})
+    url = "https://events.example.test/e/1"
+    low = _draft("x", url=url, title="Low Title", venue="Hall", tz=None)
+    event = repo.upsert_draft(low, "h", NOW).event_id
+    high = _draft(
+        "y", source_id="src-b", url=url, title="High Title", venue=None
+    )
+    repo.upsert_draft(high, "h", NOW)
+    repo.upsert_draft(
+        _draft("x", url=url, title="Low Again", venue="Hall", organizer="Org"),
+        "h2",
+        NOW,
+    )
+    repo.link_profile(event, "p", NOW)
+    [merged] = repo.upcoming("p", NOW)
+    assert merged.title == "High Title"
+    assert merged.venue == "Hall"
+    assert merged.organizer == "Org"
+
+
+def test_merge_moves_sources_profiles_and_records_alias(
+    conn: sqlite3.Connection,
+) -> None:
+    """The survivor gains provenance, gaps, and the earliest first_seen."""
+    ids = iter(["E1", "E2"])
+    repo = EventRepository(conn, id_factory=lambda: next(ids))
+    repo.upsert_draft(_draft("a", venue=None), "h", NOW + timedelta(hours=1))
+    repo.upsert_draft(
+        _draft("b", source_id="src-b", venue="Hall", size_signal=30), "h", NOW
+    )
+    repo.link_profile("E1", "p", NOW + timedelta(hours=1))
+    repo.link_profile("E2", "p", NOW)
+    repo.merge("E2", "E1", NOW)
+    [event] = repo.upcoming("p", NOW)
+    assert event.event_id == "E1"
+    assert event.venue == "Hall"
+    assert event.size_signal == 30
+    assert event.first_seen == NOW
+    assert {s.source_id for s in event.sources} == {"src-a", "src-b"}
+    alias = conn.execute(
+        "SELECT event_id FROM event_aliases WHERE alias_id = 'E2'"
+    ).fetchone()
+    assert alias[0] == "E1"
+    added = repo.added_between("p", NOW, NOW + timedelta(days=1), NOW)
+    assert [e.event_id for e in added] == ["E1"]
+
+
+def test_geocode_cache_and_missing_locations(
+    conn: sqlite3.Connection,
+) -> None:
+    """Misses are cached; only upcoming, unlocated, in-person events list."""
+    from eventradar.storage.repositories import GeocodeCacheRepository
+
+    cache = GeocodeCacheRepository(conn)
+    cache.put("a st", (33.1, -117.2, "address"), "census", NOW)
+    cache.put("nowhere", None, "census", NOW)
+    hit, miss = cache.get("a st"), cache.get("nowhere")
+    assert hit is not None
+    assert (hit.lat, hit.precision) == (33.1, "address")
+    assert miss is not None
+    assert miss.lat is None
+    assert cache.get("unknown") is None
+    repo = EventRepository(conn)
+    repo.upsert_draft(_draft("1", address="1 Main St"), "h", NOW)
+    repo.upsert_draft(
+        _draft("2", address="2 Main St", lat=33.0, lon=-117.0), "h", NOW
+    )
+    repo.upsert_draft(
+        _draft("3", address="3 Main St", start_utc=NOW - timedelta(days=5)),
+        "h",
+        NOW,
+    )
+    assert [a for _, a in repo.missing_locations(NOW)] == ["1 Main St"]
+
+
+def test_cancellation_from_any_source_sticks(
+    conn: sqlite3.Connection,
+) -> None:
+    """A lower-priority source or a merged duplicate can cancel an event."""
+    from eventradar.domain.enums import EventStatus
+
+    ids = iter(["E1", "E2", "E3"])
+    repo = EventRepository(
+        conn, id_factory=lambda: next(ids), priorities={"src-b": 90}
+    )
+    url = "https://events.example.test/e/1"
+    repo.upsert_draft(_draft("x", source_id="src-b", url=url), "h", NOW)
+    repo.upsert_draft(
+        _draft("x", url=url, status=EventStatus.CANCELLED), "h", NOW
+    )
+    repo.upsert_draft(_draft("y"), "h", NOW)
+    repo.upsert_draft(
+        _draft("z", source_id="src-c", status=EventStatus.CANCELLED),
+        "h",
+        NOW,
+    )
+    repo.merge("E3", "E2", NOW)
+    for event_id in ("E1", "E2"):
+        repo.link_profile(event_id, "p", NOW)
+    statuses = {e.event_id: e.status for e in repo.upcoming("p", NOW)}
+    assert statuses == {
+        "E1": EventStatus.CANCELLED,
+        "E2": EventStatus.CANCELLED,
+    }

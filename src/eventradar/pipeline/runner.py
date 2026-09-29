@@ -19,10 +19,12 @@ from eventradar.config.schema import (
 )
 from eventradar.domain.ids import IdFactory, new_event_id
 from eventradar.http import HttpClient
+from eventradar.pipeline.enrich import EnrichStats, build_geocoder, enrich
 from eventradar.pipeline.fetch import fetch_all
 from eventradar.pipeline.normalize import ingest, parse_and_upsert
 from eventradar.pipeline.profile_filter import assign_profile
 from eventradar.pipeline.publish import render_profile, upload
+from eventradar.pipeline.resolve import resolve
 from eventradar.sources.base import SourceContext
 from eventradar.sources.registry import build_source
 from eventradar.storage.blob import BlobStore, build_blob
@@ -62,6 +64,8 @@ class RunSummary:
     status: str
     sources: list[SourceRunRow] = field(default_factory=list)
     profiles: dict[str, dict[str, int]] = field(default_factory=dict)
+    enrich: EnrichStats | None = None
+    merged: int = 0
 
 
 def environment(bundle: ConfigBundle, name: str) -> EnvironmentSettings:
@@ -224,7 +228,8 @@ async def run(
     summary = RunSummary(run_id=run_id, status="running")
     with open_state(state, run_id, ttl) as (conn, path):
         runs = RunRepository(conn)
-        events = EventRepository(conn, id_factory)
+        priorities = {sid: s.priority for sid, s in bundle.sources.items()}
+        events = EventRepository(conn, id_factory, priorities)
         runs.start(run_id, now)
         async with HttpClient(
             bundle.settings.http, transport=transport
@@ -235,9 +240,14 @@ async def run(
                 previous=RawRecordRepository(conn).latest_one,
             )
             results = await fetch_all(bundle.enabled_sources(), ctx)
-        summary.sources = [
-            ingest(conn, result, run_id, now, events) for result in results
-        ]
+            summary.sources = [
+                ingest(conn, result, run_id, now, events) for result in results
+            ]
+            geo = bundle.settings.geo
+            summary.enrich = await enrich(
+                conn, events, build_geocoder(geo), http, now, geo
+            )
+        summary.merged = resolve(conn, events, now)
         artifacts = []
         with transaction(conn):
             for profile in profiles:
@@ -291,7 +301,8 @@ def replay(
     written: dict[str, int] = {}
     owner = f"replay-{ULID()}"
     with open_state(state, owner, ttl) as (conn, path):
-        events = EventRepository(conn)
+        priorities = {sid: s.priority for sid, s in bundle.sources.items()}
+        events = EventRepository(conn, priorities=priorities)
         raws = RawRecordRepository(conn)
         with transaction(conn):
             for source_id in ids:

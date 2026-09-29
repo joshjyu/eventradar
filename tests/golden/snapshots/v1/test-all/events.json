@@ -1,5 +1,5 @@
 {
-  "count": 9,
+  "count": 8,
   "events": [
     {
       "address": "123 Main St, Irvine, CA",
@@ -144,7 +144,7 @@
     {
       "address": "500 Harbor Dr, San Diego, CA",
       "attendance_mode": "mixed",
-      "description": null,
+      "description": "Get up-to-date information at: https://events.example.test/cloud-summit",
       "end_utc": "2026-10-21T00:00:00Z",
       "event_id": "EVT0007",
       "first_seen": "2026-09-26T13:17:00Z",
@@ -152,7 +152,7 @@
       "last_seen": "2026-09-26T13:17:00Z",
       "lat": 32.7157,
       "lon": -117.1611,
-      "organizer": null,
+      "organizer": "Cloud Summit",
       "schema_version": "1.0",
       "size_signal": 800,
       "sources": [
@@ -160,6 +160,11 @@
           "native_id": "https://events.example.test/e/cloud-summit-102",
           "source_id": "fixture-hub",
           "url": "https://events.example.test/e/cloud-summit-102"
+        },
+        {
+          "native_id": "evt-bbb222@events.example.test",
+          "source_id": "fixture-utc",
+          "url": "https://events.example.test/event/evt-bbb222"
         }
       ],
       "start_utc": "2026-10-20T16:00:00Z",
@@ -170,34 +175,6 @@
       "venue": "Harbor Center"
     },
     {
-      "address": null,
-      "attendance_mode": "in_person",
-      "description": "Get up-to-date information at: https://events.example.test/cloud-summit",
-      "end_utc": "2026-10-21T01:00:00Z",
-      "event_id": "EVT0009",
-      "first_seen": "2026-09-26T13:17:00Z",
-      "kinds": [],
-      "last_seen": "2026-09-26T13:17:00Z",
-      "lat": 32.7157,
-      "lon": -117.1611,
-      "organizer": "Cloud Summit",
-      "schema_version": "1.0",
-      "size_signal": null,
-      "sources": [
-        {
-          "native_id": "evt-bbb222@events.example.test",
-          "source_id": "fixture-utc",
-          "url": "https://events.example.test/event/evt-bbb222"
-        }
-      ],
-      "start_utc": "2026-10-20T16:00:00Z",
-      "status": "scheduled",
-      "title": "SoCal Cloud Summit",
-      "tz": "America/Los_Angeles",
-      "url": "https://events.example.test/event/evt-bbb222",
-      "venue": null
-    },
-    {
       "address": "100 Example Ave, Pasadena, CA, US",
       "attendance_mode": "in_person",
       "description": "Build & demo robots.",
@@ -206,8 +183,8 @@
       "first_seen": "2026-09-26T13:17:00Z",
       "kinds": [],
       "last_seen": "2026-09-26T13:17:00Z",
-      "lat": null,
-      "lon": null,
+      "lat": 34.1478,
+      "lon": -118.1445,
       "organizer": "Robot Club",
       "schema_version": "1.0",
       "size_signal": null,

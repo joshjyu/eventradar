@@ -3,6 +3,7 @@ version: 1
 sources:
   - id: luma-la-tech-week
     adapter: ical
+    priority: 60
     params:
       url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-BVYkgFSqxs8DEOL"
       default_tz: America/Los_Angeles
@@ -11,12 +12,14 @@ sources:
   # filters them; until then no profile includes them.
   - id: luma-la-city
     adapter: ical
+    priority: 60
     params:
       url: "https://api.lu.ma/ics/get?entity=discover&id=discplace-OgfEAh5KgfMzise"
       default_tz: America/Los_Angeles
 
   - id: luma-sd-city
     adapter: ical
+    priority: 60
     params:
       url: "https://api.lu.ma/ics/get?entity=discover&id=discplace-MNBATdzid940kqJ"
       default_tz: America/Los_Angeles

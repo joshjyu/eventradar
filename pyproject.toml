@@ -17,7 +17,9 @@ dependencies = [
     "pydantic>=2.10",
     "python-ulid>=3.0",
     "pyyaml>=6.0",
+    "rapidfuzz>=3.14.6",
     "typer>=0.15",
+    "tzfpy>=2.1.0",
 ]
 
 [project.scripts]
@@ -29,6 +31,9 @@ jsonld = "eventradar.sources.protocols.jsonld:JsonLdSource"
 devpost = "eventradar.sources.platforms.devpost:DevpostSource"
 eventbrite = "eventradar.sources.platforms.eventbrite:EventbriteSource"
 meetup = "eventradar.sources.platforms.meetup:MeetupSource"
+
+[project.entry-points."eventradar.geocoders"]
+census = "eventradar.geo.geocode.providers.census:CensusGeocoder"
 
 [project.entry-points."eventradar.blob"]
 local = "eventradar.storage.blob.local:LocalBlobStore"

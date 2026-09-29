@@ -11,6 +11,15 @@ run:
   lock_ttl_s: 3600
   snapshot_retention: 14
 
+# Enrich stage: events with an address but no coordinates are geocoded
+# (U.S. Census, keyless), falling back to ZIP centroids. Misses are cached
+# and retried after `retry_misses_after_days`.
+geo:
+  geocoder:
+    provider: census
+  max_lookups_per_run: 200
+  retry_misses_after_days: 30
+
 # Selected with `--env` or EVENTRADAR_ENV. `${VAR}` values are read from
 # the environment at run time and never stored.
 environments:

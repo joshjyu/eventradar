@@ -3,6 +3,12 @@ http:
   user_agent: eventradar-test
   per_host_min_interval_s: 0
   max_retries: 0
+geo:
+  geocoder:
+    provider: census
+    options:
+      endpoint: https://census.example.test/geocoder
+  max_lookups_per_run: 10
 environments:
   test:
     state:
