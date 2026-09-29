@@ -25,6 +25,7 @@ eventradar = "eventradar.cli:app"
 
 [project.entry-points."eventradar.sources"]
 ical = "eventradar.sources.protocols.ical:IcalSource"
+jsonld = "eventradar.sources.protocols.jsonld:JsonLdSource"
 
 [project.entry-points."eventradar.blob"]
 local = "eventradar.storage.blob.local:LocalBlobStore"
