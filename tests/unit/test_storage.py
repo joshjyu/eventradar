@@ -150,3 +150,31 @@ def test_latest_one_returns_newest_payload(conn: sqlite3.Connection) -> None:
     assert latest is not None
     assert latest.payload == {"v": 2}
     assert repo.latest_one("src-a", "missing") is None
+
+
+def test_same_page_from_two_sources_is_one_event(
+    conn: sqlite3.Connection,
+) -> None:
+    """Matching URL and start date merge; a different date does not."""
+    repo = EventRepository(conn)
+    url = "https://events.example.test/e/1"
+    first = repo.upsert_draft(_draft("x", url=url), "h", NOW)
+    second = repo.upsert_draft(
+        _draft("x", source_id="src-b", url=url), "h", NOW
+    )
+    other_day = repo.upsert_draft(
+        _draft(
+            "y",
+            source_id="src-b",
+            url=url,
+            start_utc=NOW + timedelta(days=9),
+        ),
+        "h",
+        NOW,
+    )
+    assert second.event_id == first.event_id
+    assert not second.created
+    assert other_day.event_id != first.event_id
+    repo.link_profile(first.event_id, "p", NOW)
+    [event] = repo.upcoming("p", NOW)
+    assert {s.source_id for s in event.sources} == {"src-a", "src-b"}

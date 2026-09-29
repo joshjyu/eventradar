@@ -330,6 +330,14 @@ class EventRepository:
                 (draft.url, content_hash, draft.source_id, draft.native_id),
             )
             return UpsertResult(event_id, created=False)
+        match = self._same_page(draft)
+        if match:
+            self._link_source(draft, content_hash, match)
+            self._conn.execute(
+                "UPDATE events SET last_seen = ? WHERE event_id = ?",
+                (to_db(now), match),
+            )
+            return UpsertResult(match, created=False)
         event_id = self._new_id()
         columns = ", ".join(("event_id", *_EVENT_COLUMNS))
         marks = ", ".join("?" * (len(_EVENT_COLUMNS) + 3))
@@ -338,6 +346,41 @@ class EventRepository:
             f"VALUES ({marks})",
             (event_id, *values, to_db(now), to_db(now)),
         )
+        self._link_source(draft, content_hash, event_id)
+        return UpsertResult(event_id, created=True)
+
+    def _same_page(self, draft: EventDraft) -> str | None:
+        """
+        Find an event already known under the same page and start date.
+
+        Matching on both avoids merging distinct events that share a
+        generic link. Fuzzy cross-source matching happens in `resolve`.
+
+        Parameters:
+          draft: Draft whose URL is already canonical.
+        Returns:
+          The matching event id, or None.
+        """
+        if not draft.url:
+            return None
+        row = self._conn.execute(
+            "SELECT event_id FROM events WHERE url = ? "
+            "AND substr(start_utc, 1, 10) = ? ORDER BY event_id LIMIT 1",
+            (draft.url, to_db(draft.start_utc)[:10]),
+        ).fetchone()
+        return row["event_id"] if row else None
+
+    def _link_source(
+        self, draft: EventDraft, content_hash: str, event_id: str
+    ) -> None:
+        """
+        Record that a source record describes an event.
+
+        Parameters:
+          draft: Draft from the source record.
+          content_hash: Hash of the raw record.
+          event_id: Event the record belongs to.
+        """
         self._conn.execute(
             "INSERT INTO event_sources VALUES (?, ?, ?, ?, ?)",
             (
@@ -348,7 +391,6 @@ class EventRepository:
                 content_hash,
             ),
         )
-        return UpsertResult(event_id, created=True)
 
     def mark_seen(
         self, source_id: str, native_ids: Iterable[str], now: datetime

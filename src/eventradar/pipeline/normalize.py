@@ -6,7 +6,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 
-from eventradar.domain.models import RawRecord
+from eventradar.domain.models import EventDraft, RawRecord
+from eventradar.domain.urls import canonical_url
 from eventradar.pipeline.fetch import FetchResult
 from eventradar.sources.base import Source
 from eventradar.storage.repositories import (
@@ -58,9 +59,23 @@ def parse_and_upsert(
             )
             continue
         for draft in drafts:
-            events.upsert_draft(draft, raw.content_hash, now)
+            events.upsert_draft(normalize_draft(draft), raw.content_hash, now)
             parsed += 1
     return ParseCounts(parsed=parsed, errors=errors)
+
+
+def normalize_draft(draft: EventDraft) -> EventDraft:
+    """
+    Apply source-independent cleanup before storage.
+
+    Parameters:
+      draft: Draft as parsed by an adapter.
+    Returns:
+      The draft with a canonical URL.
+    """
+    if not draft.url:
+        return draft
+    return draft.model_copy(update={"url": canonical_url(draft.url)})
 
 
 def ingest(
