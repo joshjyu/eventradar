@@ -68,6 +68,7 @@ class _Group:
     agents: list[str] = field(default_factory=list)
     rules: list[_Rule] = field(default_factory=list)
     crawl_delay: float | None = None
+    closed: bool = False
 
 
 def _groups(text: str) -> list[_Group]:
@@ -88,14 +89,17 @@ def _groups(text: str) -> list[_Group]:
         key, value = (p.strip() for p in line.split(":", 1))
         key = key.lower()
         if key == "user-agent":
-            # Consecutive user-agent lines share one group.
-            if current is None or current.rules or current.crawl_delay:
+            # Consecutive user-agent lines share one group; any rule line,
+            # even an empty `Disallow:`, ends the group's agent list.
+            if current is None or current.closed:
                 current = _Group()
                 groups.append(current)
             current.agents.append(value.lower())
-        elif current is None:
             continue
-        elif key in {"allow", "disallow"} and value:
+        if current is None or key not in {"allow", "disallow", "crawl-delay"}:
+            continue
+        current.closed = True
+        if key in {"allow", "disallow"} and value:
             current.rules.append(_Rule(allow=key == "allow", pattern=value))
         elif key == "crawl-delay":
             try:
