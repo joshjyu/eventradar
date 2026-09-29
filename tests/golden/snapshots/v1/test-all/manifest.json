@@ -1,7 +1,7 @@
 {
   "counts": {
-    "new": 6,
-    "upcoming": 7
+    "new": 7,
+    "upcoming": 9
   },
   "generated_at": "2026-09-26T13:17:00+00:00",
   "profile": {
@@ -25,6 +25,14 @@
       "parse_errors": 1,
       "parsed": 5,
       "source_id": "fixture-edge",
+      "status": "ok"
+    },
+    {
+      "changed": 2,
+      "fetched": 2,
+      "parse_errors": 0,
+      "parsed": 2,
+      "source_id": "fixture-hub",
       "status": "ok"
     },
     {

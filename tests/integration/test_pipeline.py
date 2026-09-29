@@ -51,6 +51,30 @@ def _mock_feeds() -> None:
     respx.get("https://feeds.example.test/broken.ics").mock(
         return_value=httpx.Response(404)
     )
+    _mock_jsonld_site()
+
+
+def _mock_jsonld_site() -> None:
+    """Serve hub and event pages; robots.txt blocks one event page."""
+    hub = "https://hub.example.test/d/city/tech--events/"
+    events = "https://events.example.test"
+    pages = HERE.parent / "fixtures" / "jsonld"
+    respx.get("https://hub.example.test/robots.txt").mock(
+        return_value=httpx.Response(404)
+    )
+    respx.get(f"{events}/robots.txt").mock(
+        return_value=httpx.Response(
+            200, text="User-agent: *\nDisallow: /e/empty-page-103\n"
+        )
+    )
+    served = {f"{hub}?page={p}": f"hub_p{p}.html" for p in (1, 2, 3)}
+    served[f"{events}/e/robotics-day-101"] = "event_robotics.html"
+    served[f"{events}/e/cloud-summit-102"] = "event_cloud.html"
+    served[f"{events}/e/empty-page-103"] = "event_empty.html"
+    for url, name in served.items():
+        respx.get(url).mock(
+            return_value=httpx.Response(200, text=(pages / name).read_text())
+        )
 
 
 async def _run(bundle: ConfigBundle, now: datetime, run_id: str) -> dict:
@@ -142,6 +166,7 @@ async def test_second_run_is_idempotent(
     second = await _run(bundle, later, "RUN2")
     assert second["sources"]["fixture-utc"][2] == 0
     assert second["sources"]["fixture-edge"][2] == 0
+    assert second["sources"]["fixture-hub"][2] == 0
     assert second["profiles"]["test-all"]["new"] == 0
     feed = json.loads((tmp_path / "public/v1/test-all/events.json").read_text())
     ids = [e["event_id"] for e in feed["events"]]
@@ -164,9 +189,7 @@ async def test_all_sources_failing_keeps_published_data(
     events = tmp_path / "public/v1/test-all/events.json"
     before = events.read_bytes()
     respx.routes.clear()
-    respx.get(url__startswith="https://feeds.example.test/").mock(
-        return_value=httpx.Response(500)
-    )
+    respx.route().mock(return_value=httpx.Response(500))
     result = await _run(bundle, NOW + timedelta(hours=1), "RUN2")
     assert result["status"] == "failed"
     assert events.read_bytes() == before
@@ -191,3 +214,4 @@ async def test_replay_needs_no_network(
     assert written["fixture-utc"] == 2
     assert written["fixture-edge"] == 5
     assert written["fixture-broken"] == 0
+    assert written["fixture-hub"] == 2
