@@ -17,6 +17,7 @@ uv run eventradar run --no-publish
 - `config/` — settings, source registry, profiles, regions, topics
 - `src/eventradar/` — pipeline, adapters, storage, publishing
 - `tests/` — unit, contract, integration, regression, golden
+- `workers/scheduler/` — Cloudflare Worker that triggers the daily run
 - `docs/adr/` — architecture decisions
 
 See `CONTRIBUTING.md` for conventions.
