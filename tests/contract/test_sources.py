@@ -81,6 +81,23 @@ CASES: list[tuple[str, str, dict[str, Any], dict[str, str]]] = [
         },
     ),
     (
+        "jsonld-links",
+        "jsonld",
+        {
+            "discovery": {
+                "type": "links",
+                "urls": ["https://site.example.test/schedule"],
+            },
+            "url_pattern": r"^https://events\.example\.test/e/",
+            "default_tz": LA,
+        },
+        {
+            "https://site.example.test/schedule": "jsonld/site_links.html",
+            f"{EV}/robotics-day-101": "jsonld/event_robotics.html",
+            f"{EV}/cloud-summit-102": "jsonld/event_cloud.html",
+        },
+    ),
+    (
         "jsonld-urls",
         "jsonld",
         {

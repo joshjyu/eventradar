@@ -1,9 +1,11 @@
 """Generic schema.org JSON-LD adapter: discover event pages, read JSON-LD.
 
 Discovery modes:
-  hub   Listing pages whose JSON-LD `ItemList` links to event pages; a
-        `{page}` placeholder in the URL enables pagination.
-  urls  A fixed list of event pages.
+  hub    Listing pages whose JSON-LD `ItemList` links to event pages; a
+         `{page}` placeholder in the URL enables pagination.
+  links  Pages whose plain `<a>` links point to event pages; `url_pattern`
+         selects which links count.
+  urls   A fixed list of event pages.
 
 Event pages are refetched only when their hub listing changes or on a
 staggered cycle of `refresh_days`, so a daily run mostly fetches new events.
@@ -11,10 +13,16 @@ staggered cycle of `refresh_days`, so a daily run mostly fetches new events.
 
 import asyncio
 import re
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from eventradar.config.schema import SourceConfig
 from eventradar.domain.models import EventDraft, RawRecord
@@ -27,6 +35,7 @@ from eventradar.sources.protocols.jsonld_pages import (
     PageHarvester,
     refresh_due,
 )
+from eventradar.sources.protocols.links import page_links
 
 __all__ = ["JsonLdParams", "JsonLdSource", "refresh_due"]
 
@@ -69,18 +78,43 @@ class UrlDiscovery(BaseModel):
     _https = field_validator("urls")(_require_https)
 
 
+class LinksDiscovery(BaseModel):
+    """Pages that link to event pages, e.g. an event's own website."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    type: Literal["links"]
+    urls: list[str] = Field(min_length=1)
+
+    _https = field_validator("urls")(_require_https)
+
+
 class JsonLdParams(BaseModel):
     """Parameters for a `jsonld` source."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     discovery: Annotated[
-        HubDiscovery | UrlDiscovery, Field(discriminator="type")
+        HubDiscovery | LinksDiscovery | UrlDiscovery,
+        Field(discriminator="type"),
     ]
     url_pattern: str | None = None
     default_tz: str = "UTC"
     max_events: int = Field(default=200, ge=1, le=2000)
     refresh_days: int = Field(default=7, ge=1, le=60)
+
+    @model_validator(mode="after")
+    def _links_need_pattern(self) -> Self:
+        """
+        Require `url_pattern` with links discovery, which would otherwise
+        follow every link on the page.
+
+        Returns:
+          The validated params.
+        """
+        if isinstance(self.discovery, LinksDiscovery) and not self.url_pattern:
+            raise ValueError("links discovery requires url_pattern")
+        return self
 
     @field_validator("url_pattern")
     @classmethod
@@ -174,9 +208,39 @@ class JsonLdSource:
         discovery = self.params.discovery
         if isinstance(discovery, UrlDiscovery):
             found = {canonical_url(u): None for u in discovery.urls}
+        elif isinstance(discovery, LinksDiscovery):
+            found = await self._follow_links(discovery, ctx)
         else:
             found = await self._crawl_hubs(discovery, ctx)
         return list(found.items())[: self.params.max_events]
+
+    async def _follow_links(
+        self, pages: LinksDiscovery, ctx: SourceContext
+    ) -> dict[str, dict[str, Any] | None]:
+        """
+        Collect matching links from each listing page.
+
+        Parameters:
+          pages: Links discovery settings.
+          ctx: Run-scoped services.
+        Returns:
+          Canonical URL to None (plain links carry no listing data).
+        """
+        found: dict[str, dict[str, Any] | None] = {}
+        errors: list[HttpError] = []
+        for url in pages.urls:
+            try:
+                response = await ctx.http.get(url)
+            except HttpError as exc:
+                errors.append(exc)
+                continue
+            for link in page_links(response.text, url):
+                key = canonical_url(link)
+                if key != canonical_url(url) and self._wanted(key):
+                    found.setdefault(key, None)
+        if not found and errors:
+            raise errors[0]
+        return found
 
     async def _crawl_hubs(
         self, hub: HubDiscovery, ctx: SourceContext
