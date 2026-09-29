@@ -50,12 +50,28 @@ class RunSettings(_Strict):
     raw_history_days: int = Field(default=30, ge=1)
 
 
+class ProviderSettings(_Strict):
+    """Selects a plugin implementation and its options."""
+
+    provider: str
+    options: dict[str, Any] = Field(default_factory=dict)
+
+
+class GeoSettings(_Strict):
+    """Geocoding behavior for the enrich stage."""
+
+    geocoder: ProviderSettings = ProviderSettings(provider="census")
+    max_lookups_per_run: int = Field(default=200, ge=0)
+    retry_misses_after_days: int = Field(default=30, ge=1)
+
+
 class Settings(_Strict):
     """Top-level runtime settings (`config/settings.yaml`)."""
 
     version: Literal[1]
     http: HttpSettings
     run: RunSettings = RunSettings()
+    geo: GeoSettings = GeoSettings()
     environments: dict[str, EnvironmentSettings]
 
 
@@ -72,6 +88,8 @@ class SourceConfig(_Strict):
     id: ConfigId
     adapter: str
     enabled: bool = True
+    # Higher wins when sources describe the same event differently.
+    priority: int = Field(default=50, ge=0, le=100)
     params: dict[str, Any] = Field(default_factory=dict)
     slo: SloSettings = SloSettings()
 

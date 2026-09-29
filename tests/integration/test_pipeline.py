@@ -52,6 +52,35 @@ def _mock_feeds() -> None:
         return_value=httpx.Response(404)
     )
     _mock_jsonld_site()
+    _mock_geocoder()
+
+
+def _mock_geocoder() -> None:
+    """Locate the Pasadena fixture venue; everything else is a miss."""
+
+    def _answer(request: httpx.Request) -> httpx.Response:
+        """
+        Match one known address.
+
+        Parameters:
+          request: Geocoding request.
+        Returns:
+          Census-shaped response.
+        """
+        address = request.url.params.get("address", "")
+        matches = (
+            [{"coordinates": {"x": -118.1445, "y": 34.1478}}]
+            if address.startswith("100 Example Ave")
+            else []
+        )
+        return httpx.Response(200, json={"result": {"addressMatches": matches}})
+
+    respx.get("https://census.example.test/robots.txt").mock(
+        return_value=httpx.Response(404)
+    )
+    respx.get(url__startswith="https://census.example.test/geocoder").mock(
+        side_effect=_answer
+    )
 
 
 def _mock_jsonld_site() -> None:
