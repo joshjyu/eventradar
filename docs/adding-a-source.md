@@ -12,6 +12,28 @@
        default_tz: America/Los_Angeles
    ```
 
+   Any site whose pages carry schema.org `Event` JSON-LD works with the
+   `jsonld` adapter, either from listing pages (`hub`) or fixed pages
+   (`urls`):
+
+   ```yaml
+   - id: eventbrite-riverside-tech
+     adapter: jsonld
+     params:
+       discovery:
+         type: hub                 # or: type: urls, urls: [...]
+         pages: 2                  # hard cap; `{page}` marks pagination
+         urls:
+           - "https://www.eventbrite.com/d/ca--riverside/science-and-tech--events/?page={page}"
+       url_pattern: '^https://www\.eventbrite\.com/e/'
+       default_tz: America/Los_Angeles
+       max_events: 100             # pages fetched per run, at most
+       refresh_days: 7             # unchanged pages refetched this often
+   ```
+
+   Check the site's `robots.txt` first; the client enforces it and will
+   report blocked URLs as fetch errors.
+
 2. `uv run eventradar config validate`
 3. `uv run eventradar source test luma-oc-tech`
 4. Include it in a profile's `sources:` list (or leave the profile at
