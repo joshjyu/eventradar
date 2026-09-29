@@ -14,3 +14,10 @@ updates:
     groups:
       python:
         patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /workers/scheduler
+    schedule:
+      interval: weekly
+    groups:
+      worker:
+        patterns: ["*"]
