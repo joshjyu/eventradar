@@ -90,3 +90,13 @@ def test_expand_env_reports_missing_names_only() -> None:
     """Missing variables are named without echoing any values."""
     with pytest.raises(ConfigError, match="MISSING_ONE"):
         expand_env("${MISSING_ONE}", {"OTHER": "secret"})
+
+
+def test_unknown_keep_region_is_reported(config_dir: Path) -> None:
+    """A source's keep_region must name an existing region."""
+    (config_dir / "sources" / "kr.yaml").write_text(
+        "version: 1\nsources:\n  - id: kr-one\n    adapter: ical\n"
+        "    keep_region: atlantis\n"
+    )
+    with pytest.raises(ConfigError, match="unknown keep_region 'atlantis'"):
+        load_config(config_dir)

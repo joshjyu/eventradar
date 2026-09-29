@@ -29,8 +29,13 @@ class Thresholds:
     # Within this distance the loose title rule applies.
     max_distance_km: float = 1.0
     # Up to this distance (geocoding noise, e.g. ZIP centroids) only the
-    # strict title rule applies; beyond it events never match.
+    # strict title rule applies; beyond it events never match...
     max_noisy_distance_km: float = 5.0
+    # ...unless the titles are identical and share a serial number such as
+    # "#73", start within `max_serial_delta_min`, and are this close
+    # (platforms sometimes place one venue several kilometers apart).
+    max_serial_distance_km: float = 25.0
+    max_serial_delta_min: float = 15.0
 
 
 def normalize_title(title: str) -> str:
@@ -101,8 +106,31 @@ def is_duplicate(
         km = distance_km(a.lat, a.lon, b.lat, b.lon)
         if km <= limits.max_distance_km:
             return loose
-        return km <= limits.max_noisy_distance_km and strict
+        if km <= limits.max_noisy_distance_km:
+            return strict
+        return (
+            km <= limits.max_serial_distance_km
+            and delta <= limits.max_serial_delta_min
+            and ta == tb
+            and bool(_serials(a.title))
+            and _serials(a.title) == _serials(b.title)
+        )
     return strict
+
+
+def _serials(title: str) -> frozenset[str]:
+    """
+    Find numbers that identify an occurrence, e.g. the 73 in "Workshop #73".
+
+    Dates and years are ignored.
+
+    Parameters:
+      title: Raw event title.
+    Returns:
+      Distinct numbers in the title.
+    """
+    text = _YEAR.sub(" ", _DATE.sub(" ", title))
+    return frozenset(re.findall(r"\d+", text))
 
 
 def _title_score(a: str, b: str, loose: bool) -> float:

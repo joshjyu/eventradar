@@ -69,6 +69,6 @@ The `eventbrite` adapter reads a personal OAuth token from
 
 ## Later secrets
 
-Add to the same `production` environment when their milestones land:
-`SERPAPI_KEY` (M7) and the LLM provider key (M8). Set a usage cap or spend
-limit on each provider account. Meetup and Devpost need no credentials.
+Add any future provider key to the same `production` environment, and set
+a usage cap or spend limit on the provider account. Luma, Meetup, and
+Devpost need no credentials.

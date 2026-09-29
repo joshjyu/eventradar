@@ -193,6 +193,11 @@ def load_config(root: Path) -> ConfigBundle:
     topics = _load_named(TopicConfig, root / "topics", root, problems)
     regions = {p.stem: p for p in sorted((root / "regions").glob("*.geojson"))}
     _check_profiles(profiles, sources, topics, regions, problems)
+    problems.extend(
+        f"source '{s.id}': unknown keep_region '{s.keep_region}'"
+        for s in sources.values()
+        if s.keep_region and s.keep_region not in regions
+    )
     kinds_path = root / "kinds.yaml"
     kinds = (
         _parse(KindRules, kinds_path, root, problems)

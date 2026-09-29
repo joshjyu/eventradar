@@ -225,3 +225,46 @@ async def test_signals_update_without_refetch() -> None:
     assert bumped.payload["signals"] == {"n": 2}
     assert bumped.payload["events"] == first.payload["events"]
     assert routes[url].call_count == 1
+
+
+def test_page_links_resolves_and_dedups() -> None:
+    """Links are absolute, http(s) only, and listed once."""
+    from eventradar.sources.protocols.links import page_links
+
+    html = (FIXTURES / "site_links.html").read_text()
+    links = page_links(html, "https://site.example.test/")
+    assert "https://site.example.test/e/ignored-relative" in links
+    assert not any(link.startswith("mailto:") for link in links)
+    assert len(links) == len(set(links))
+
+
+@respx.mock
+async def test_links_discovery_harvests_matching_event_pages() -> None:
+    """Only pattern-matching links are fetched, each once."""
+    routes = _mock_site()
+    site = "https://site.example.test/schedule"
+    respx.get(site).mock(
+        return_value=httpx.Response(
+            200, text=(FIXTURES / "site_links.html").read_text()
+        )
+    )
+    source = _source(discovery={"type": "links", "urls": [site]})
+    records = await _fetch(source)
+    assert sorted(r.native_id for r in records) == [
+        f"{EV}/cloud-summit-102",
+        f"{EV}/robotics-day-101",
+    ]
+    assert routes[f"{EV}/robotics-day-101"].call_count == 1
+    [robotics] = source.parse(
+        next(r for r in records if r.native_id.endswith("101"))
+    )
+    assert robotics.title == "Robotics Day"
+
+
+def test_links_discovery_requires_a_pattern() -> None:
+    """Following every link on a page is refused at config time."""
+    with pytest.raises(ValueError, match="requires url_pattern"):
+        _source(
+            discovery={"type": "links", "urls": ["https://site.test/"]},
+            url_pattern=None,
+        )
