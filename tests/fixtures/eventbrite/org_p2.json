@@ -1,0 +1,55 @@
+{
+ "pagination": {
+  "has_more_items": false,
+  "page_size": 2
+ },
+ "events": [
+  {
+   "id": "90000000003",
+   "name": {
+    "text": "Cancelled Robotics Expo",
+    "html": "Cancelled Robotics Expo"
+   },
+   "description": {
+    "text": "Talks, demos, and networking.",
+    "html": "<p>Talks</p>"
+   },
+   "url": "https://www.eventbrite.example.test/e/event-3-tickets-90000000003",
+   "start": {
+    "timezone": "America/Los_Angeles",
+    "local": "",
+    "utc": "2026-11-01T17:00:00Z"
+   },
+   "end": {
+    "timezone": "America/Los_Angeles",
+    "local": "",
+    "utc": "2026-11-01T23:00:00Z"
+   },
+   "status": "canceled",
+   "online_event": false,
+   "logo": {
+    "url": "https://img.example.test/rotating.png?sig=abc"
+   },
+   "organizer": {
+    "name": "Example Tech Org",
+    "id": "111",
+    "description": {
+     "text": "long"
+    }
+   },
+   "venue": {
+    "name": "Maker Hall",
+    "latitude": "33.6846",
+    "longitude": "-117.8265",
+    "address": {
+     "address_1": "100 Example Ave",
+     "city": "Irvine",
+     "region": "CA",
+     "postal_code": "92618",
+     "country": "US",
+     "localized_address_display": "100 Example Ave, Irvine, CA 92618"
+    }
+   }
+  }
+ ]
+}
