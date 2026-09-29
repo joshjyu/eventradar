@@ -178,7 +178,8 @@ async def test_run_matches_snapshots(
             dest.write_text(text)
     expected = {
         p.relative_to(SNAPSHOTS).as_posix(): p.read_text()
-        for p in sorted(SNAPSHOTS.rglob("*.json"))
+        for p in sorted(SNAPSHOTS.rglob("*"))
+        if p.is_file()
     }
     assert published == expected
 

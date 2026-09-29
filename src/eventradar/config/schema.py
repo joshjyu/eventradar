@@ -74,6 +74,8 @@ class Settings(_Strict):
     http: HttpSettings
     run: RunSettings = RunSettings()
     geo: GeoSettings = GeoSettings()
+    # Homepage linked from published feeds.
+    site_url: str = "https://github.com/joshjyu/eventradar"
     environments: dict[str, EnvironmentSettings]
 
 

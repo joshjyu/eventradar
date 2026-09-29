@@ -5,9 +5,11 @@ from datetime import datetime, timedelta
 
 from eventradar.config.schema import ConfigBundle, ProfileConfig
 from eventradar.publishing.artifacts import Artifact
+from eventradar.publishing.ical_feed import ical_artifact
 from eventradar.publishing.json_feed import feed_artifacts
 from eventradar.publishing.jsonschema import schema_artifact
 from eventradar.publishing.manifest import manifest_artifact
+from eventradar.publishing.rss_feed import rss_artifact
 from eventradar.storage.blob import BlobStore
 from eventradar.storage.repositories import EventRepository, SourceRunRow
 
@@ -43,6 +45,8 @@ def render_profile(
     counts = {"upcoming": len(upcoming), "new": len(added)}
     artifacts = [
         *feed_artifacts(profile, upcoming, added, day_start.date(), now),
+        ical_artifact(profile, upcoming, now),
+        rss_artifact(profile, upcoming, now, bundle.settings.site_url),
         manifest_artifact(profile, run_id, now, counts, rows),
     ]
     return artifacts, counts
