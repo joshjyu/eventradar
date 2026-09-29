@@ -78,3 +78,51 @@ def test_schema_artifact_describes_event() -> None:
     assert {"event_id", "start_utc", "schema_version"} <= set(
         schema["properties"]
     )
+
+
+def test_ical_feed_round_trips() -> None:
+    """Calendar apps can parse the feed; cancellations are marked."""
+    from icalendar import Calendar
+
+    from eventradar.domain.enums import EventStatus
+    from eventradar.publishing.ical_feed import ical_artifact
+
+    events = [
+        _event("E1").model_copy(
+            update={
+                "venue": "Hall",
+                "address": "1 Main St",
+                "lat": 34.0,
+                "lon": -118.0,
+                "url": "https://events.example.test/e/1",
+            }
+        ),
+        _event("E2").model_copy(update={"status": EventStatus.CANCELLED}),
+    ]
+    art = ical_artifact(PROFILE, events, NOW)
+    assert art.key == "v1/test-profile/events.ics"
+    assert art.content_type.startswith("text/calendar")
+    parsed = Calendar.from_ical(art.body).events
+    assert [str(e["UID"]) for e in parsed] == ["E1@eventradar", "E2@eventradar"]
+    assert str(parsed[0]["LOCATION"]) == "Hall, 1 Main St"
+    assert str(parsed[1]["STATUS"]) == "CANCELLED"
+    assert ical_artifact(PROFILE, events, NOW).body == art.body
+
+
+def test_rss_feed_is_valid_and_newest_first() -> None:
+    """The feed parses as XML, orders by first_seen, and escapes text."""
+    from datetime import timedelta
+    from xml.etree.ElementTree import fromstring
+
+    from eventradar.publishing.rss_feed import rss_artifact
+
+    older = _event("E1").model_copy(update={"title": "Build & <Ship>"})
+    newer = _event("E2").model_copy(
+        update={"first_seen": NOW + timedelta(hours=1), "tz": "UTC"}
+    )
+    art = rss_artifact(PROFILE, [older, newer], NOW, "https://site.test")
+    root = fromstring(art.body)
+    titles = [i.findtext("title") for i in root.iter("item")]
+    assert titles == ["Hack", "Build & <Ship>"]
+    assert root.findtext("channel/link") == "https://site.test"
+    assert b"&amp; &lt;Ship&gt;" in art.body

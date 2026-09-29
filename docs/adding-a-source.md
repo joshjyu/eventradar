@@ -34,10 +34,17 @@
    Check the site's `robots.txt` first; the client enforces it and will
    report blocked URLs as fetch errors.
 
+   Optional source settings:
+   - `priority` (0-100, default 50): higher wins when sources describe
+     the same event differently.
+   - `default_kinds`: kinds for its events when title rules find none.
+
 2. `uv run eventradar config validate`
 3. `uv run eventradar source test luma-oc-tech`
-4. Include it in a profile's `sources:` list (or leave the profile at
-   `all`).
+4. Profiles use every source by default. If the source is already scoped
+   to the profile's region or topic, list it under the profile's
+   `trust.region`, `trust.topic` (weaker keyword evidence), or
+   `trust.topic_always` (no keywords needed).
 
 ## Platform adapters
 

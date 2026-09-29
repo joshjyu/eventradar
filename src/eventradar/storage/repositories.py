@@ -108,6 +108,19 @@ class ResolveCandidate:
 
 
 @dataclass(frozen=True)
+class ProfileCandidate:
+    """The fields profile filtering needs."""
+
+    event_id: str
+    title: str
+    description: str | None
+    lat: float | None
+    lon: float | None
+    attendance_mode: AttendanceMode
+    sources: frozenset[str]
+
+
+@dataclass(frozen=True)
 class CachedGeocode:
     """A stored geocoding result; `lat` is None for a recorded miss."""
 
@@ -724,21 +737,112 @@ class EventRepository:
         )
         self._conn.execute("DELETE FROM events WHERE event_id = ?", (loser,))
 
-    def source_ids_for(self, event_id: str) -> list[str]:
+    def profile_candidates(
+        self, now: datetime, source_ids: Iterable[str]
+    ) -> list[ProfileCandidate]:
         """
-        List the sources that describe an event.
+        Load upcoming events that have a record from any given source.
+
+        Parameters:
+          now: Reference time.
+          source_ids: Sources a profile draws from.
+        Returns:
+          Candidates with every source that describes them.
+        """
+        ids = sorted(set(source_ids))
+        marks = ",".join("?" * len(ids))
+        rows = self._conn.execute(
+            "SELECT e.event_id, e.title, e.description, e.lat, e.lon, "  # noqa: S608
+            "e.attendance_mode, group_concat(s.source_id) AS sources "
+            "FROM events e JOIN event_sources s USING (event_id) "
+            "WHERE COALESCE(e.end_utc, e.start_utc) >= ? "
+            "AND e.event_id IN (SELECT event_id FROM event_sources "
+            f"WHERE source_id IN ({marks})) "
+            "GROUP BY e.event_id ORDER BY e.start_utc, e.event_id",
+            (to_db(now), *ids),
+        )
+        return [
+            ProfileCandidate(
+                event_id=r["event_id"],
+                title=r["title"],
+                description=r["description"],
+                lat=r["lat"],
+                lon=r["lon"],
+                attendance_mode=AttendanceMode(r["attendance_mode"]),
+                sources=frozenset(r["sources"].split(",")),
+            )
+            for r in rows
+        ]
+
+    def sync_profile(
+        self,
+        profile_id: str,
+        considered: Iterable[str],
+        qualifying: Iterable[str],
+        now: datetime,
+    ) -> tuple[int, int]:
+        """
+        Make profile membership match the latest filter decisions.
+
+        Only events in `considered` are touched, so past members stay.
+
+        Parameters:
+          profile_id: Profile id.
+          considered: Events the filter evaluated.
+          qualifying: Events that passed.
+          now: Time new members joined.
+        Returns:
+          (added, removed) counts.
+        """
+        keep = set(qualifying)
+        added = sum(self.link_profile(e, profile_id, now) for e in sorted(keep))
+        drop = sorted(set(considered) - keep)
+        removed = 0
+        for chunk_start in range(0, len(drop), 500):
+            chunk = drop[chunk_start : chunk_start + 500]
+            cur = self._conn.execute(
+                "DELETE FROM event_profiles WHERE profile_id = ? "  # noqa: S608
+                f"AND event_id IN ({','.join('?' * len(chunk))})",
+                (profile_id, *chunk),
+            )
+            removed += cur.rowcount
+        return added, removed
+
+    def upcoming_titles(
+        self, now: datetime
+    ) -> list[tuple[str, str, frozenset[str]]]:
+        """
+        List upcoming events for classification.
+
+        Parameters:
+          now: Reference time.
+        Returns:
+          (event_id, title, source ids) triples.
+        """
+        rows = self._conn.execute(
+            "SELECT e.event_id, e.title, group_concat(s.source_id) AS srcs "
+            "FROM events e JOIN event_sources s USING (event_id) "
+            "WHERE COALESCE(e.end_utc, e.start_utc) >= ? "
+            "GROUP BY e.event_id",
+            (to_db(now),),
+        )
+        return [
+            (r["event_id"], r["title"], frozenset(r["srcs"].split(",")))
+            for r in rows
+        ]
+
+    def set_rule_kinds(self, event_id: str, kinds: Iterable[EventKind]) -> None:
+        """
+        Store kinds assigned by title rules.
 
         Parameters:
           event_id: Event id.
-        Returns:
-          Source ids, sorted.
+          kinds: Kinds.
         """
-        rows = self._conn.execute(
-            "SELECT DISTINCT source_id FROM event_sources WHERE event_id = ? "
-            "ORDER BY source_id",
-            (event_id,),
+        self._conn.execute(
+            "UPDATE events SET rule_kinds = ? WHERE event_id = ?",
+            (json.dumps(sorted(k.value for k in kinds)), event_id),
         )
-        return [r[0] for r in rows]
 
     def mark_seen(
         self, source_id: str, native_ids: Iterable[str], now: datetime
@@ -776,24 +880,6 @@ class EventRepository:
             (event_id, profile_id, to_db(now)),
         )
         return cur.rowcount == 1
-
-    def event_ids_for_sources(self, source_ids: Iterable[str]) -> list[str]:
-        """
-        List events that have at least one record from the given sources.
-
-        Parameters:
-          source_ids: Source ids.
-        Returns:
-          Distinct event ids.
-        """
-        ids = list(source_ids)
-        rows = self._conn.execute(
-            "SELECT DISTINCT event_id FROM event_sources "  # noqa: S608
-            f"WHERE source_id IN ({','.join('?' * len(ids))}) "
-            "ORDER BY event_id",
-            ids,
-        )
-        return [r[0] for r in rows]
 
     def upcoming(self, profile_id: str, now: datetime) -> list[Event]:
         """
@@ -957,7 +1043,10 @@ def _row_to_event(
         status=EventStatus(row["status"]),
         organizer=row["organizer"],
         url=row["url"],
-        kinds=frozenset(EventKind(k) for k in json.loads(row["kinds"])),
+        kinds=frozenset(
+            EventKind(k)
+            for k in (*json.loads(row["kinds"]), *json.loads(row["rule_kinds"]))
+        ),
         size_signal=row["size_signal"],
         first_seen=from_db(row["first_seen"]),
         last_seen=from_db(row["last_seen"]),

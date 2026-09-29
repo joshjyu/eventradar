@@ -12,6 +12,7 @@ from pathlib import Path
 import httpx
 from ulid import ULID
 
+from eventradar.classify.kinds import KindClassifier
 from eventradar.config.schema import (
     ConfigBundle,
     EnvironmentSettings,
@@ -19,6 +20,7 @@ from eventradar.config.schema import (
 )
 from eventradar.domain.ids import IdFactory, new_event_id
 from eventradar.http import HttpClient
+from eventradar.pipeline.classify import classify_kinds
 from eventradar.pipeline.enrich import EnrichStats, build_geocoder, enrich
 from eventradar.pipeline.fetch import fetch_all
 from eventradar.pipeline.normalize import ingest, parse_and_upsert
@@ -248,6 +250,10 @@ async def run(
                 conn, events, build_geocoder(geo), http, now, geo
             )
         summary.merged = resolve(conn, events, now)
+        defaults = {i: s.default_kinds for i, s in bundle.sources.items()}
+        classify_kinds(
+            conn, events, KindClassifier(bundle.kinds), now, defaults
+        )
         artifacts = []
         with transaction(conn):
             for profile in profiles:

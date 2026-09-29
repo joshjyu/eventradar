@@ -8,6 +8,7 @@ sources:
   - id: meetup-socal-tech
     adapter: meetup
     priority: 70
+    default_kinds: [meetup]
     params:
       areas:
         - {label: los-angeles, lat: 34.05, lon: -118.24, radius_mi: 25}

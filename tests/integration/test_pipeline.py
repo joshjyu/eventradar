@@ -51,6 +51,11 @@ def _mock_feeds() -> None:
     respx.get("https://feeds.example.test/broken.ics").mock(
         return_value=httpx.Response(404)
     )
+    respx.get("https://feeds.example.test/far.ics").mock(
+        return_value=httpx.Response(
+            200, content=(FIXTURES / "out_of_region.ics").read_bytes()
+        )
+    )
     _mock_jsonld_site()
     _mock_geocoder()
 
@@ -173,7 +178,8 @@ async def test_run_matches_snapshots(
             dest.write_text(text)
     expected = {
         p.relative_to(SNAPSHOTS).as_posix(): p.read_text()
-        for p in sorted(SNAPSHOTS.rglob("*.json"))
+        for p in sorted(SNAPSHOTS.rglob("*"))
+        if p.is_file()
     }
     assert published == expected
 
@@ -244,3 +250,4 @@ async def test_replay_needs_no_network(
     assert written["fixture-edge"] == 5
     assert written["fixture-broken"] == 0
     assert written["fixture-hub"] == 2
+    assert written["fixture-far"] == 1

@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss version="2.0"><channel><title>Test profile</title><link>https://github.com/joshjyu/eventradar</link><description>New events: Test profile</description><lastBuildDate>Sat, 26 Sep 2026 13:17:00 +0000</lastBuildDate><item><title>AI Builders Hack Night</title><link>https://events.example.test/event/evt-aaa111</link><guid isPermaLink="false">EVT0009</guid><pubDate>Sat, 26 Sep 2026 13:17:00 +0000</pubDate><description>Wed, Oct 14 2026, 6:00 PM PDT
+Get up-to-date information at: https://events.example.test/hack-night
+
+Bring a laptop.</description><category>hackathon</category></item><item><title>Cloud Summit</title><link>https://events.example.test/e/cloud-summit-102</link><guid isPermaLink="false">EVT0008</guid><pubDate>Sat, 26 Sep 2026 13:17:00 +0000</pubDate><description>CANCELLED
+Tue, Oct 20 2026, 9:00 AM PDT
+Harbor Center, 500 Harbor Dr, San Diego, CA
+Get up-to-date information at: https://events.example.test/cloud-summit</description><category>conference</category></item><item><title>Robotics Day</title><link>https://events.example.test/e/robotics-day-101</link><guid isPermaLink="false">EVT0007</guid><pubDate>Sat, 26 Sep 2026 13:17:00 +0000</pubDate><description>Fri, Nov 06 2026, 10:00 AM PST
+Maker Hall, 100 Example Ave, Pasadena, CA, US
+Build &amp; demo robots.</description></item><item><title>Custom Zone Talk</title><guid isPermaLink="false">EVT0003</guid><pubDate>Sat, 26 Sep 2026 13:17:00 +0000</pubDate><description>Tue, Dec 01 2026, 10:00 AM PST</description></item><item><title>All-Day Hackathon</title><guid isPermaLink="false">EVT0002</guid><pubDate>Sat, 26 Sep 2026 13:17:00 +0000</pubDate><description>Sat, Oct 03 2026, 12:00 AM PDT</description><category>hackathon</category></item><item><title>Floating Meetup</title><guid isPermaLink="false">EVT0001</guid><pubDate>Sat, 26 Sep 2026 13:17:00 +0000</pubDate><description>Thu, Oct 01 2026, 6:00 PM PDT
+123 Main St, Irvine, CA</description><category>meetup</category></item></channel></rss>

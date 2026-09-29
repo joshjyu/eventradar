@@ -11,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 
 from eventradar.config.schema import (
     ConfigBundle,
+    KindRules,
     ProfileConfig,
     Settings,
     SourceConfig,
@@ -151,6 +152,12 @@ def _check_profiles(
       problems: Accumulator for error messages.
     """
     for p in profiles.values():
+        trusted = [*p.trust.region, *p.trust.topic, *p.trust.topic_always]
+        problems.extend(
+            f"profile '{p.id}': trust names unknown source '{s}'"
+            for s in trusted
+            if s not in sources
+        )
         if p.region not in regions:
             problems.append(f"profile '{p.id}': unknown region '{p.region}'")
         if p.topic not in topics:
@@ -186,7 +193,13 @@ def load_config(root: Path) -> ConfigBundle:
     topics = _load_named(TopicConfig, root / "topics", root, problems)
     regions = {p.stem: p for p in sorted((root / "regions").glob("*.geojson"))}
     _check_profiles(profiles, sources, topics, regions, problems)
-    if problems or settings is None:
+    kinds_path = root / "kinds.yaml"
+    kinds = (
+        _parse(KindRules, kinds_path, root, problems)
+        if kinds_path.is_file()
+        else KindRules(version=1)
+    )
+    if problems or settings is None or kinds is None:
         raise ConfigError(problems)
     return ConfigBundle(
         root=root,
@@ -195,6 +208,7 @@ def load_config(root: Path) -> ConfigBundle:
         profiles=profiles,
         topics=topics,
         regions=regions,
+        kinds=kinds,
     )
 
 

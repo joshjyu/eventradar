@@ -1,17 +1,112 @@
 version: 1
 id: tech
 name: Technology
+# A title keyword qualifies. Otherwise the description needs 3 distinct
+# keywords, or 1 for sources the profile trusts for this topic.
+# Avoid words that are common outside tech ("design", "launch", "summit",
+# "future", "security", "investor", "code", "rust", "java", "react").
 keywords:
-  - hackathon
+  # Software and engineering
+  - software
   - developer
+  - developers
+  - devs
   - engineering
-  - startup
-  - ai
-  - machine learning
-  - data
-  - cloud
+  - engineers
+  - programming
+  - coding
+  - coders
+  - hackathon
+  - hack
+  - hacks
+  - hacker
+  - hackers
+  - hack night
+  - hackerspace
+  - open source
   - devops
-  - security
+  - game dev
+  - gamedev
+  - web dev
+  - api
+  - saas
+  - python
+  - javascript
+  - typescript
+  - golang
+  - linux
+  - qt
+  - kubernetes
+  - cloud computing
+  - aws
+  - azure
+  - vibe code
+  - vibe coding
+  - vibecoding
+  # AI and data
+  - ai
+  - a.i.
+  - artificial intelligence
+  - machine learning
+  - ml
+  - llm
+  - llms
+  - genai
+  - generative ai
+  - agentic
+  - ai agents
+  - data science
+  - data engineering
+  - analytics
+  - computer vision
+  # Tech sectors and ecosystem
+  - tech
+  - technology
+  - technologists
+  - techies
+  - fintech
+  - edtech
+  - healthtech
+  - medtech
+  - biotech
+  - climate tech
+  - climatetech
+  - proptech
+  - deep tech
+  - startup
+  - startups
+  - founder
+  - founders
+  - cofounder
+  - co-founder
+  - venture capital
+  - vc
+  - product management
+  - product managers
+  - ux
+  - ui/ux
+  # Security, hardware, and adjacent
+  - cybersecurity
+  - cyber
+  - infosec
+  - malware
   - web3
-  - product
+  - blockchain
+  - crypto
+  - bitcoin
+  - ethereum
+  - robotics
+  - robot
+  - robots
+  - drones
+  - iot
+  - 3d printing
+  - electronics
+  - arduino
+  - raspberry pi
+  - makerspace
+  - quantum computing
+  - semiconductor
 exclude_keywords: []
+description_min_matches: 3
+trusted_description_min_matches: 1

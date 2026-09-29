@@ -1,0 +1,48 @@
+version: 1
+# Title phrases that mark an event's kind. An event can have several kinds;
+# events that match none are left unclassified.
+kinds:
+  hackathon:
+    - hackathon
+    - hackathons
+    - hack night
+    - hack day
+    - hacks
+    - buildathon
+    - codefest
+    - game jam
+    - ctf
+  conference:
+    - conference
+    - conf
+    - summit
+    - symposium
+    - expo
+    - convention
+    - devcon
+    - pycon
+  workshop:
+    - workshop
+    - bootcamp
+    - hands-on
+    - masterclass
+    - class
+    - course
+    - training
+    - tutorial
+    - study session
+  meetup:
+    - meetup
+    - meet-up
+    - mixer
+    - happy hour
+    - networking
+    - social
+    - coffee
+    - demo night
+    - demo day
+    - show and tell
+    - show & tell
+    - fireside
+    - panel
+    - user group

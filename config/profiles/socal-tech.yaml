@@ -3,12 +3,19 @@ id: socal-tech
 name: Southern California tech events
 region: socal
 topic: tech
-# Limited to sources that are already regional and on-topic. Region and
-# topic filtering (M5) will admit the city-wide Luma feeds, worldwide
-# Devpost hackathons, and nationwide Eventbrite organizers.
-sources:
-  - luma-la-tech-week
-  - eventbrite-la-tech
-  - eventbrite-oc-tech
-  - eventbrite-sd-tech
-  - meetup-socal-tech
+sources: all
+trust:
+  # Unlocated events from these count as in the region (their discovery is
+  # already scoped to SoCal).
+  region:
+    - luma-la-tech-week
+    - meetup-socal-tech
+  # Curated for tech: every event counts, no keywords needed.
+  topic_always:
+    - luma-la-tech-week
+    - devpost-in-person
+  # Mostly tech: one description keyword is enough evidence.
+  topic:
+    - meetup-socal-tech
+    - eventbrite-tech-organizers
+include_online: false

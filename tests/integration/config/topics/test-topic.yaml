@@ -1,3 +1,6 @@
 version: 1
 id: test-topic
 name: Test topic
+keywords: [hack, hackathon, robotics, summit, meetup, talk]
+description_min_matches: 3
+trusted_description_min_matches: 1

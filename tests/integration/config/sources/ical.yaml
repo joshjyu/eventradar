@@ -14,3 +14,7 @@ sources:
     adapter: ical
     params:
       url: https://feeds.example.test/broken.ics
+  - id: fixture-far
+    adapter: ical
+    params:
+      url: https://feeds.example.test/far.ics
