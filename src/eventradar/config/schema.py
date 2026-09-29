@@ -106,6 +106,9 @@ class SourceConfig(_Strict):
     priority: int = Field(default=50, ge=0, le=100)
     # Kinds for this source's events when title rules find none.
     default_kinds: list[EventKind] = Field(default_factory=list)
+    # Drop this source's events outside a region at ingest (for sources
+    # that cover far more than any profile needs).
+    keep_region: ConfigId | None = None
     params: dict[str, Any] = Field(default_factory=dict)
     slo: SloSettings = SloSettings()
 

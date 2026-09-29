@@ -8,6 +8,7 @@ from datetime import datetime
 
 from eventradar.domain.models import EventDraft, RawRecord
 from eventradar.domain.urls import canonical_url
+from eventradar.geo.region import Region
 from eventradar.pipeline.fetch import FetchResult
 from eventradar.sources.base import Source
 from eventradar.storage.repositories import (
@@ -34,6 +35,7 @@ def parse_and_upsert(
     records: Iterable[RawRecord],
     events: EventRepository,
     now: datetime,
+    keep: Region | None = None,
 ) -> ParseCounts:
     """
     Parse records and write the resulting drafts.
@@ -43,6 +45,7 @@ def parse_and_upsert(
       records: Records to parse.
       events: Event repository.
       now: Observation time.
+      keep: When set, drafts not located inside this region are dropped.
     Returns:
       Counts of drafts written and records that failed to parse.
     """
@@ -59,9 +62,26 @@ def parse_and_upsert(
             )
             continue
         for draft in drafts:
+            if keep is not None and not _inside(draft, keep):
+                continue
             events.upsert_draft(normalize_draft(draft), raw.content_hash, now)
             parsed += 1
     return ParseCounts(parsed=parsed, errors=errors)
+
+
+def _inside(draft: EventDraft, region: Region) -> bool:
+    """
+    Check that a draft is located inside a region.
+
+    Parameters:
+      draft: Parsed draft.
+      region: Region to test.
+    Returns:
+      True only for located drafts inside the region.
+    """
+    if draft.lat is None or draft.lon is None:
+        return False
+    return region.contains(draft.lat, draft.lon)
 
 
 def normalize_draft(draft: EventDraft) -> EventDraft:
@@ -84,6 +104,7 @@ def ingest(
     run_id: str,
     now: datetime,
     events: EventRepository,
+    keep: Region | None = None,
 ) -> SourceRunRow:
     """
     Store one source's fetch result atomically and record its metrics.
@@ -94,6 +115,7 @@ def ingest(
       run_id: Current run.
       now: Observation time.
       events: Event repository bound to `conn`.
+      keep: The source's `keep_region`, if any.
     Returns:
       The stored metrics row.
     """
@@ -112,7 +134,7 @@ def ingest(
                     else unchanged
                 )
                 target.append(record)
-            counts = parse_and_upsert(result.source, changed, events, now)
+            counts = parse_and_upsert(result.source, changed, events, now, keep)
             events.mark_seen(
                 result.config.id, (r.native_id for r in unchanged), now
             )

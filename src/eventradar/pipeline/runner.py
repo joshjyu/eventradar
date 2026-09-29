@@ -21,6 +21,7 @@ from eventradar.config.schema import (
     SourceConfig,
 )
 from eventradar.domain.ids import IdFactory, new_event_id
+from eventradar.geo.region import Region, load_region
 from eventradar.health.monitor import (
     HealthChange,
     build_alerter,
@@ -215,6 +216,21 @@ def _status(rows: list[SourceRunRow]) -> str:
     return "degraded" if failed else "ok"
 
 
+def _keep_region(bundle: ConfigBundle, source: SourceConfig) -> Region | None:
+    """
+    Load a source's ingest region, if it has one.
+
+    Parameters:
+      bundle: Loaded config.
+      source: Source config.
+    Returns:
+      The region, or None.
+    """
+    if source.keep_region is None:
+        return None
+    return load_region(bundle.regions[source.keep_region])
+
+
 def _select_sources(
     bundle: ConfigBundle, conn: sqlite3.Connection, now: datetime
 ) -> tuple[list[SourceConfig], list[str]]:
@@ -314,7 +330,15 @@ async def run(
             active, skipped = _select_sources(bundle, conn, now)
             results = await fetch_all(active, ctx)
             summary.sources = [
-                ingest(conn, result, run_id, now, events) for result in results
+                ingest(
+                    conn,
+                    result,
+                    run_id,
+                    now,
+                    events,
+                    _keep_region(bundle, result.config),
+                )
+                for result in results
             ]
             summary.sources += [
                 _record_disabled(runs, run_id, source_id, now)
@@ -399,7 +423,11 @@ def replay(
             for source_id in ids:
                 source = build_source(bundle.sources[source_id])
                 counts = parse_and_upsert(
-                    source, raws.latest([source_id]), events, now
+                    source,
+                    raws.latest([source_id]),
+                    events,
+                    now,
+                    _keep_region(bundle, bundle.sources[source_id]),
                 )
                 written[source_id] = counts.parsed
         save_state(
