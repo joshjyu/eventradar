@@ -43,6 +43,7 @@ from eventradar.storage.db import check_integrity, connect, migrate
 from eventradar.storage.lock import BlobLock
 from eventradar.storage.repositories import (
     EventRepository,
+    MaintenanceRepository,
     RawRecordRepository,
     RunRepository,
     SourceRunRow,
@@ -216,6 +217,69 @@ def _status(rows: list[SourceRunRow]) -> str:
     return "degraded" if failed else "ok"
 
 
+def _reparse(
+    bundle: ConfigBundle,
+    conn: sqlite3.Connection,
+    events: EventRepository,
+    source_ids: tuple[str, ...],
+    now: datetime,
+) -> dict[str, int]:
+    """
+    Parse every source's latest stored records again, without fetching.
+
+    Parameters:
+      bundle: Loaded config.
+      conn: State database.
+      events: Event repository.
+      source_ids: Sources to reparse.
+      now: Observation time recorded on updated events.
+    Returns:
+      Drafts written per source.
+    """
+    raws = RawRecordRepository(conn)
+    written: dict[str, int] = {}
+    with transaction(conn):
+        for source_id in source_ids:
+            config = bundle.sources[source_id]
+            counts = parse_and_upsert(
+                build_source(config),
+                raws.latest([source_id]),
+                events,
+                now,
+                _keep_region(bundle, config),
+            )
+            written[source_id] = counts.parsed
+    return written
+
+
+def _run_maintenance(
+    bundle: ConfigBundle,
+    conn: sqlite3.Connection,
+    events: EventRepository,
+    now: datetime,
+) -> None:
+    """
+    Perform one-off tasks that migrations requested.
+
+    Parameters:
+      bundle: Loaded config.
+      conn: State database.
+      events: Event repository.
+      now: Run time.
+    """
+    tasks = MaintenanceRepository(conn)
+    for task in tasks.pending():
+        if task == "reparse":
+            written = _reparse(
+                bundle, conn, events, tuple(sorted(bundle.sources)), now
+            )
+            log.info("maintenance reparse: %s", written)
+        else:
+            log.warning("unknown maintenance task %r; leaving it", task)
+            continue
+        tasks.complete(task)
+
+
 def _keep_region(bundle: ConfigBundle, source: SourceConfig) -> Region | None:
     """
     Load a source's ingest region, if it has one.
@@ -319,6 +383,7 @@ async def run(
         priorities = {sid: s.priority for sid, s in bundle.sources.items()}
         events = EventRepository(conn, id_factory, priorities)
         runs.start(run_id, now)
+        _run_maintenance(bundle, conn, events, now)
         async with HttpClient(
             bundle.settings.http, transport=transport
         ) as http:
@@ -413,23 +478,11 @@ def replay(
     ids = source_ids or tuple(sorted(bundle.sources))
     state = build_blob(env.state)
     ttl = timedelta(seconds=bundle.settings.run.lock_ttl_s)
-    written: dict[str, int] = {}
     owner = f"replay-{ULID()}"
     with open_state(state, owner, ttl) as (conn, path):
         priorities = {sid: s.priority for sid, s in bundle.sources.items()}
         events = EventRepository(conn, priorities=priorities)
-        raws = RawRecordRepository(conn)
-        with transaction(conn):
-            for source_id in ids:
-                source = build_source(bundle.sources[source_id])
-                counts = parse_and_upsert(
-                    source,
-                    raws.latest([source_id]),
-                    events,
-                    now,
-                    _keep_region(bundle, bundle.sources[source_id]),
-                )
-                written[source_id] = counts.parsed
+        written = _reparse(bundle, conn, events, ids, now)
         save_state(
             state,
             conn,

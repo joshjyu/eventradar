@@ -74,7 +74,7 @@
       "last_seen": "2026-09-26T13:17:00Z",
       "lat": 34.0522,
       "lon": -118.2437,
-      "organizer": "Builders Guild",
+      "organizer": null,
       "schema_version": "1.0",
       "size_signal": null,
       "sources": [

@@ -11,7 +11,6 @@ Event pages are refetched only when their hub listing changes or on a
 staggered cycle of `refresh_days`, so a daily run mostly fetches new events.
 """
 
-import asyncio
 import re
 from typing import Annotated, Any, Literal, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -33,6 +32,7 @@ from eventradar.schemaorg.extract import item_list_entries, jsonld_documents
 from eventradar.sources.base import SourceContext
 from eventradar.sources.protocols.jsonld_pages import (
     PageHarvester,
+    PageRequest,
     refresh_due,
 )
 from eventradar.sources.protocols.links import page_links
@@ -188,13 +188,9 @@ class JsonLdSource:
           One raw record per event page.
         """
         candidates = await self._discover(ctx)
-        results = await asyncio.gather(
-            *(
-                self._pages.record(url, listing, ctx)
-                for url, listing in candidates
-            )
+        return await self._pages.harvest(
+            [PageRequest(url, listing) for url, listing in candidates], ctx
         )
-        return [r for r in results if r is not None]
 
     async def _discover(self, ctx: SourceContext) -> list[Candidate]:
         """

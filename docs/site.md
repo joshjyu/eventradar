@@ -17,10 +17,16 @@
    - Build command: *(empty)*
    - Build output directory: `public`
    - Root directory: `site`
-2. **Bind the bucket.** Project -> Settings -> Bindings -> Add -> R2
-   bucket: variable name `FEED_BUCKET`, bucket = the public feed bucket.
-   Add it for both Production and Preview, then redeploy.
-3. **Check** `https://<project>.pages.dev` and
+2. **Bind the bucket, Production only.** Project -> Settings (environment:
+   Production) -> Bindings -> Add -> R2 bucket: variable name
+   `FEED_BUCKET`, bucket = the public feed bucket. Do not add it to
+   Preview: an R2 binding can write, and preview deployments run code from
+   unmerged branches.
+3. **Limit preview builds.** Settings -> Build -> Branch control -> Preview
+   branch: None (or named branches only).
+4. **Redeploy** so the binding applies: Deployments -> latest production
+   deployment -> Retry deployment.
+5. **Check** `https://<project>.pages.dev` and
    `https://<project>.pages.dev/v1/socal-tech/manifest.json`.
 
 ## Custom domain from another Cloudflare account

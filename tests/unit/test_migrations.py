@@ -54,3 +54,20 @@ def test_0003_backfills_primary_source(tmp_path: Path) -> None:
     ).fetchone()[0]
     assert primary == "src-a"
     assert migrate(conn) == []
+
+
+def test_0006_clears_organizers_and_requests_reparse(tmp_path: Path) -> None:
+    """Stored organizer names are cleared and a reparse is queued."""
+    conn = _database_at(tmp_path / "old.db", 5)
+    conn.execute(
+        "INSERT INTO events (event_id, title, start_utc, attendance_mode, "
+        "status, kinds, first_seen, last_seen, organizer) VALUES ('E1', "
+        "'T', '2026-10-01T00:00:00.000000+00:00', 'unknown', 'scheduled', "
+        "'[]', '2026-09-01T00:00:00.000000+00:00', "
+        "'2026-09-01T00:00:00.000000+00:00', 'Pat Example')"
+    )
+    assert migrate(conn) == ["0006_clear_organizers.sql"]
+    organizer = conn.execute("SELECT organizer FROM events").fetchone()[0]
+    assert organizer is None
+    tasks = [r[0] for r in conn.execute("SELECT task FROM maintenance_tasks")]
+    assert tasks == ["reparse"]

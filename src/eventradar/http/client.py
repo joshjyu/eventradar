@@ -197,6 +197,9 @@ class HttpClient:
                 continue
             if response.is_error:
                 break
+            challenge = _challenge(method, response)
+            if challenge:
+                raise HttpError(f"{label}: bot challenge ({challenge})")
             if self._on_response:
                 self._on_response(response)
             return response
@@ -297,6 +300,31 @@ class HttpClient:
                 content=b"".join(chunks),
                 request=resp.request,
             )
+
+
+def _challenge(method: str, response: httpx.Response) -> str | None:
+    """
+    Recognize bot-challenge pages served with a success status.
+
+    Some firewalls answer blocked clients with an interstitial page and a
+    2xx status (AWS WAF uses 202). Treating those as content would look
+    like a site that suddenly has no events.
+
+    Parameters:
+      method: Request method.
+      response: Final response.
+    Returns:
+      A short description of the challenge, or None.
+    """
+    action = response.headers.get("x-amzn-waf-action")
+    if action:
+        return f"AWS WAF {action}"
+    mitigated = response.headers.get("cf-mitigated")
+    if mitigated:
+        return f"Cloudflare {mitigated}"
+    if method == "GET" and response.status_code == 202:
+        return "HTTP 202"
+    return None
 
 
 def _backoff(attempt: int) -> float:

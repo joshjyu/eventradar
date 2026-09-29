@@ -202,3 +202,32 @@ async def test_send_json_without_retry_makes_one_attempt() -> None:
                 retry=False,
             )
     assert route.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("status", "headers", "reason"),
+    [
+        (202, {}, "HTTP 202"),
+        (202, {"x-amzn-waf-action": "challenge"}, "AWS WAF challenge"),
+        (200, {"cf-mitigated": "challenge"}, "Cloudflare challenge"),
+    ],
+)
+@respx.mock
+async def test_bot_challenges_are_fetch_errors(
+    status: int, headers: dict[str, str], reason: str
+) -> None:
+    """
+    Challenge pages served with a success status raise, without retries.
+
+    Parameters:
+      status: Response status.
+      headers: Response headers.
+      reason: Expected description in the error.
+    """
+    route = respx.get(URL).mock(
+        return_value=httpx.Response(status, headers=headers, text="<html>")
+    )
+    async with HttpClient(_settings()) as http:
+        with pytest.raises(HttpError, match=f"bot challenge \\({reason}\\)"):
+            await http.get(URL)
+    assert route.call_count == 1

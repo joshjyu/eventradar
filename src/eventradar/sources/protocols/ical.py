@@ -66,7 +66,12 @@ class IcalParams(BaseModel):
 
 
 class IcalSource:
-    """Reads one VCALENDAR feed; each VEVENT becomes one raw record."""
+    """
+    Reads one VCALENDAR feed; each VEVENT becomes one raw record.
+
+    ORGANIZER is not used: calendar platforms often fill it with a host's
+    personal name, and only organizations are published.
+    """
 
     def __init__(self, config: SourceConfig) -> None:
         """
@@ -161,7 +166,6 @@ class IcalSource:
                 lon=lon,
                 attendance_mode=_mode(location, location_url, lat),
                 status=_status(vevent),
-                organizer=_organizer(vevent),
                 url=(
                     _text(vevent.get("URL"))
                     or location_url
@@ -333,21 +337,6 @@ def _status(vevent: VEvent) -> EventStatus:
     return (
         EventStatus.CANCELLED if value == "CANCELLED" else EventStatus.SCHEDULED
     )
-
-
-def _organizer(vevent: VEvent) -> str | None:
-    """
-    Read the organizer's common name, never the address.
-
-    Parameters:
-      vevent: Parsed event.
-    Returns:
-      Organizer display name, if present.
-    """
-    prop = vevent.get("ORGANIZER")
-    if prop is None:
-        return None
-    return _text(getattr(prop, "params", {}).get("CN"))
 
 
 def _text(value: object) -> str | None:
