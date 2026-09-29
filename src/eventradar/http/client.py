@@ -1,17 +1,18 @@
 """Polite async HTTP client with retries and a response size cap."""
 
 import asyncio
+import json
 import random
 from collections import defaultdict
 from collections.abc import Callable
 from email.utils import parsedate_to_datetime
 from types import TracebackType
-from typing import Self
+from typing import Any, Self
 
 import httpx
 
 from eventradar.config.schema import HttpSettings
-from eventradar.http.ratelimit import HostRateLimiter
+from eventradar.http.ratelimit import HostRateLimiter, site_key
 from eventradar.http.redact import redact_url
 from eventradar.http.robots import (
     ALLOW_ALL,
@@ -102,23 +103,65 @@ class HttpClient:
           url: Absolute URL.
           headers: Extra request headers.
         Returns:
-          The final response (status < 400 or 304).
+          The final response (status < 400).
         """
-        safe_url = redact_url(url)
+        return await self._request("GET", url, headers)
+
+    async def post_json(
+        self,
+        url: str,
+        body: Any,
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        """
+        POST a JSON body, e.g. a read-only GraphQL query.
+
+        Retries apply, so use this only for idempotent requests.
+
+        Parameters:
+          url: Absolute URL.
+          body: JSON-serializable request body.
+          headers: Extra request headers.
+        Returns:
+          The final response (status < 400).
+        """
+        merged = {"Content-Type": "application/json", **(headers or {})}
+        content = json.dumps(body).encode()
+        return await self._request("POST", url, merged, content)
+
+    async def _request(
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, str] | None,
+        content: bytes | None = None,
+    ) -> httpx.Response:
+        """
+        Send a request with robots checks, spacing, and retries.
+
+        Parameters:
+          method: HTTP method.
+          url: Absolute URL.
+          headers: Request headers.
+          content: Request body, if any.
+        Returns:
+          The final response (status < 400).
+        """
+        label = f"{method} {redact_url(url)}"
         if self._settings.respect_robots and not await self._allowed(url):
-            raise HttpError(f"GET {safe_url}: disallowed by robots.txt")
-        host = httpx.URL(url).host
+            raise HttpError(f"{label}: disallowed by robots.txt")
+        key = site_key(httpx.URL(url).host)
         attempts = self._settings.max_retries + 1
         status: int | None = None
         for attempt in range(attempts):
             last = attempt + 1 == attempts
             async with self._semaphore:
-                await self._limiter.wait(host)
+                await self._limiter.wait(key)
                 try:
-                    response = await self._fetch(url, headers)
+                    response = await self._fetch(method, url, headers, content)
                 except httpx.TransportError as exc:
                     if last:
-                        raise HttpError(f"GET {safe_url}: {exc!r}") from exc
+                        raise HttpError(f"{label}: {exc!r}") from exc
                     await asyncio.sleep(_backoff(attempt))
                     continue
             status = response.status_code
@@ -130,7 +173,7 @@ class HttpClient:
             if self._on_response:
                 self._on_response(response)
             return response
-        raise HttpError(f"GET {safe_url}: HTTP {status}")
+        raise HttpError(f"{label}: HTTP {status}")
 
     async def _allowed(self, url: str) -> bool:
         """
@@ -164,9 +207,11 @@ class HttpClient:
           Rules for our user agent.
         """
         async with self._semaphore:
-            await self._limiter.wait(host)
+            await self._limiter.wait(site_key(host))
             try:
-                response = await self._fetch(f"{origin}/robots.txt", None)
+                response = await self._fetch(
+                    "GET", f"{origin}/robots.txt", None
+                )
             except (httpx.TransportError, HttpError):
                 return DISALLOW_ALL
         if response.status_code >= 500:
@@ -176,30 +221,39 @@ class HttpClient:
         rules = parse_robots(response.text, self._agent)
         if rules.crawl_delay:
             self._limiter.slow_down(
-                host, min(rules.crawl_delay, self._settings.max_crawl_delay_s)
+                site_key(host),
+                min(rules.crawl_delay, self._settings.max_crawl_delay_s),
             )
         return rules
 
     async def _fetch(
-        self, url: str, headers: dict[str, str] | None
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, str] | None,
+        content: bytes | None = None,
     ) -> httpx.Response:
         """
         Stream a response, aborting if the body exceeds the cap.
 
         Parameters:
+          method: HTTP method.
           url: Absolute URL.
-          headers: Extra request headers.
+          headers: Request headers.
+          content: Request body, if any.
         Returns:
           A response whose body has been read.
         """
-        async with self._client.stream("GET", url, headers=headers) as resp:
+        async with self._client.stream(
+            method, url, headers=headers, content=content
+        ) as resp:
             chunks: list[bytes] = []
             size = 0
             async for chunk in resp.aiter_bytes():
                 size += len(chunk)
                 if size > self._max_bytes:
                     raise HttpError(
-                        f"GET {redact_url(url)}: body exceeds "
+                        f"{method} {redact_url(url)}: body exceeds "
                         f"{self._max_bytes} bytes"
                     )
                 chunks.append(chunk)

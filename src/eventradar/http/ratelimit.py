@@ -47,3 +47,28 @@ class HostRateLimiter:
                 if delay > 0:
                     await asyncio.sleep(delay)
             self._last[host] = time.monotonic()
+
+
+_SECOND_LEVEL = frozenset({"ac", "co", "com", "edu", "gov", "net", "org"})
+
+
+def site_key(host: str) -> str:
+    """
+    Group subdomains of one site so they share a rate limit.
+
+    e.g. `a.devpost.com` and `b.devpost.com` both map to `devpost.com`;
+    `x.example.co.uk` maps to `example.co.uk`.
+
+    Parameters:
+      host: Hostname.
+    Returns:
+      Registrable-domain approximation used as the limiter key.
+    """
+    labels = host.lower().rstrip(".").split(".")
+    if (
+        len(labels) >= 3
+        and len(labels[-1]) == 2
+        and labels[-2] in _SECOND_LEVEL
+    ):
+        return ".".join(labels[-3:])
+    return ".".join(labels[-2:])
