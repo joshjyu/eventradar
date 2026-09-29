@@ -23,3 +23,77 @@ sources:
     params:
       url: "https://api.lu.ma/ics/get?entity=discover&id=discplace-MNBATdzid940kqJ"
       default_tz: America/Los_Angeles
+
+  # Tech Coast Venture Network: runs OC Tech Week and a workshop series.
+  - id: luma-tcvn
+    adapter: ical
+    priority: 60
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-1L6uZSAu7p8m7Jo"
+      default_tz: America/Los_Angeles
+
+  # Global tech-community calendars with local chapters. Only their events
+  # located in SoCal are kept (keep_region); the rest are dropped at ingest.
+  - id: luma-ai-collective
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-E74MDlDKBaeAwXK"
+      default_tz: America/Los_Angeles
+
+  - id: luma-claude-community
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-TOpA5LAFfuDeFpu"
+      default_tz: America/Los_Angeles
+
+  - id: luma-codex-community
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-63UOFcweB97l2gc"
+      default_tz: America/Los_Angeles
+
+  - id: luma-latent-space
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-mc9ZW5C3TzHDv6L"
+      default_tz: America/Los_Angeles
+
+  - id: luma-openclaw
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-iOipAs7mv59Hbuz"
+      default_tz: America/Los_Angeles
+
+  - id: luma-n8n-community
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-rKZGvZjZWgFjKWW"
+      default_tz: America/Los_Angeles
+
+  - id: luma-lennys-newsletter
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-LxSRAvoOnOWxF9M"
+      default_tz: America/Los_Angeles
+
+  - id: luma-nucleate
+    adapter: ical
+    priority: 60
+    keep_region: socal
+    params:
+      url: "https://api.lu.ma/ics/get?entity=calendar&id=cal-elrIS0CD88OnQv9"
+      default_tz: America/Los_Angeles

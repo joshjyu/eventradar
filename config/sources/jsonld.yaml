@@ -49,3 +49,16 @@ sources:
       url_pattern: '^https://www\.eventbrite\.com/e/'
       default_tz: America/Los_Angeles
       max_events: 150
+
+  # OC Tech Week's own site links to each event's Luma page.
+  - id: site-oc-tech-week
+    adapter: jsonld
+    priority: 60
+    params:
+      discovery:
+        type: links
+        urls:
+          - "https://octechweek.com/"
+      url_pattern: '^https://(luma\.com|lu\.ma)/[A-Za-z0-9-]+$'
+      default_tz: America/Los_Angeles
+      max_events: 100

@@ -10,12 +10,24 @@ trust:
   region:
     - luma-la-tech-week
     - meetup-socal-tech
+    - luma-tcvn
+    - site-oc-tech-week
   # Curated for tech: every event counts, no keywords needed.
   topic_always:
     - luma-la-tech-week
     - devpost-in-person
+    - luma-tcvn
+    - site-oc-tech-week
+    - luma-ai-collective
+    - luma-claude-community
+    - luma-codex-community
+    - luma-latent-space
+    - luma-openclaw
+    - luma-n8n-community
+    - luma-lennys-newsletter
   # Mostly tech: one description keyword is enough evidence.
   topic:
     - meetup-socal-tech
     - eventbrite-tech-organizers
+    - luma-nucleate
 include_online: false
