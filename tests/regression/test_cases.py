@@ -2,10 +2,17 @@
 Regression cases: one directory per fixed bug or source-drift event.
 
 Layout of `tests/regression/<yyyy-mm-dd>-<slug>/`:
-  case.yaml      adapter, params (url is injected), optional issue link
-  input/*.body   upstream responses, served in name order, one per fetch
-  expected.json  per fetch: record count, changed ids, parsed drafts
+  case.yaml      `kind` (default `adapter`) plus kind-specific settings
+  input/         inputs for the kind
+  expected.json  reviewed output
   README.md      one-paragraph cause
+
+Kinds:
+  adapter  case.yaml: adapter, params (url is injected). input/*.body are
+           upstream responses served in name order, one per fetch.
+           Expected: per fetch, record count, changed ids, parsed drafts.
+  robots   case.yaml: agent, paths. input/robots.txt is parsed for the
+           agent. Expected: {path: allowed} for each path.
 """
 
 import json
@@ -20,6 +27,7 @@ import yaml
 
 from eventradar.config.schema import HttpSettings, SourceConfig
 from eventradar.http import HttpClient
+from eventradar.http.robots import parse_robots
 from eventradar.sources.base import SourceContext
 from eventradar.sources.registry import build_source
 
@@ -29,16 +37,34 @@ NOW = datetime(2026, 9, 26, tzinfo=UTC)
 CASES = sorted(p.parent for p in CASES_DIR.glob("*/case.yaml"))
 
 
-async def _replay_case(case_dir: Path) -> list[dict[str, Any]]:
+def _robots_case(case_dir: Path, case: dict[str, Any]) -> dict[str, bool]:
+    """
+    Decide each listed path against the case's robots.txt.
+
+    Parameters:
+      case_dir: Regression case directory.
+      case: Parsed case.yaml.
+    Returns:
+      Path to allowed flag.
+    """
+    rules = parse_robots(
+        (case_dir / "input" / "robots.txt").read_text(), case["agent"]
+    )
+    return {path: rules.allowed(path) for path in case["paths"]}
+
+
+async def _adapter_case(
+    case_dir: Path, case: dict[str, Any]
+) -> list[dict[str, Any]]:
     """
     Fetch and parse each input body in order, tracking changes.
 
     Parameters:
       case_dir: Regression case directory.
+      case: Parsed case.yaml.
     Returns:
       One summary per fetch.
     """
-    case = yaml.safe_load((case_dir / "case.yaml").read_text())
     params = {**case.get("params", {}), "url": FEED_URL}
     source = build_source(
         SourceConfig(id="regression", adapter=case["adapter"], params=params)
@@ -91,7 +117,12 @@ async def test_regression_case(case_dir: Path, update_golden: bool) -> None:
       case_dir: Regression case directory.
       update_golden: Rewrite the expectation instead of comparing.
     """
-    actual = await _replay_case(case_dir)
+    case = yaml.safe_load((case_dir / "case.yaml").read_text())
+    kind = case.get("kind", "adapter")
+    if kind == "robots":
+        actual: Any = _robots_case(case_dir, case)
+    else:
+        actual = await _adapter_case(case_dir, case)
     expected_path = case_dir / "expected.json"
     if update_golden:
         expected_path.write_text(json.dumps(actual, indent=2) + "\n")

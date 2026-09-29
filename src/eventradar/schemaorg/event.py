@@ -2,12 +2,16 @@
 
 import html
 import re
-from datetime import UTC, date, datetime, time, tzinfo
 from typing import Any
 from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
 from eventradar.domain.enums import AttendanceMode, EventStatus
+from eventradar.domain.times import (
+    TimeParseError,
+    parse_iso,
+    zone_for_offset,
+)
 from eventradar.schemaorg.extract import types_of
 
 _MAX_DESCRIPTION = 5000
@@ -125,55 +129,6 @@ def _suffix(value: Any) -> str:
       e.g. `EventScheduled`, or an empty string.
     """
     return str(value).rsplit("/", 1)[-1] if value else ""
-
-
-def parse_datetime(value: Any, zone: tzinfo) -> datetime:
-    """
-    Parse an ISO 8601 date or datetime into aware UTC.
-
-    Date-only and offset-less values are local to `zone`.
-
-    Parameters:
-      value: String from `startDate` or `endDate`.
-      zone: Fallback zone.
-    Returns:
-      Aware UTC datetime.
-    """
-    if not isinstance(value, str) or not value.strip():
-        raise EventMappingError(f"invalid date: {value!r}")
-    text = value.strip()
-    try:
-        parsed = (
-            datetime.combine(date.fromisoformat(text), time.min)
-            if len(text) == 10
-            else datetime.fromisoformat(text)
-        )
-    except ValueError as exc:
-        raise EventMappingError(f"invalid date: {value!r}") from exc
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=zone)
-    return parsed.astimezone(UTC)
-
-
-def _tz_name(raw: str, start: datetime, zone: ZoneInfo) -> str | None:
-    """
-    Attribute an IANA zone when the published offset agrees with it.
-
-    Parameters:
-      raw: Original `startDate` string.
-      start: Parsed start in UTC.
-      zone: Source's default zone.
-    Returns:
-      The zone name, or None when the offset points elsewhere.
-    """
-    text = raw.strip()
-    if len(text) <= 10:
-        return zone.key
-    offset = datetime.fromisoformat(text).utcoffset()
-    if offset is None:
-        return zone.key
-    matches = start.astimezone(zone).utcoffset() == offset
-    return zone.key if matches else None
 
 
 def _address(value: Any) -> str | None:
@@ -345,11 +300,13 @@ def event_fields(
     raw_start = node.get("startDate")
     if not title:
         raise EventMappingError("missing name")
-    start = parse_datetime(raw_start, zone)
-    end = None
-    if node.get("endDate"):
-        end = parse_datetime(node["endDate"], zone)
-        end = end if end >= start else None
+    try:
+        start = parse_iso(raw_start, zone)
+        end = parse_iso(node["endDate"], zone) if node.get("endDate") else None
+    except TimeParseError as exc:
+        raise EventMappingError(str(exc)) from exc
+    if end is not None and end < start:
+        end = None
     loc = _location(node)
     url = node.get("url")
     description = _text(node.get("description"))
@@ -358,7 +315,7 @@ def event_fields(
         "description": description[:_MAX_DESCRIPTION] if description else None,
         "start_utc": start,
         "end_utc": end,
-        "tz": _tz_name(str(raw_start), start, zone),
+        "tz": zone_for_offset(str(raw_start), start, zone),
         "venue": loc["venue"],
         "address": loc["address"],
         "lat": loc["lat"],

@@ -10,12 +10,8 @@ staggered cycle of `refresh_days`, so a daily run mostly fetches new events.
 """
 
 import asyncio
-import hashlib
-import logging
 import re
-from datetime import date
 from typing import Annotated, Any, Literal
-from urllib.parse import urljoin
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -24,19 +20,15 @@ from eventradar.config.schema import SourceConfig
 from eventradar.domain.models import EventDraft, RawRecord
 from eventradar.domain.urls import canonical_url
 from eventradar.http import HttpError
-from eventradar.schemaorg.event import (
-    EventMappingError,
-    event_fields,
-    slim_event,
+from eventradar.schemaorg.event import slim_event
+from eventradar.schemaorg.extract import item_list_entries, jsonld_documents
+from eventradar.sources.base import SourceContext
+from eventradar.sources.protocols.jsonld_pages import (
+    PageHarvester,
+    refresh_due,
 )
-from eventradar.schemaorg.extract import (
-    events,
-    item_list_entries,
-    jsonld_documents,
-)
-from eventradar.sources.base import ParseError, SourceContext
 
-log = logging.getLogger(__name__)
+__all__ = ["JsonLdParams", "JsonLdSource", "refresh_due"]
 
 
 def _require_https(urls: list[str]) -> list[str]:
@@ -129,21 +121,6 @@ class JsonLdParams(BaseModel):
 type Candidate = tuple[str, dict[str, Any] | None]
 
 
-def refresh_due(native_id: str, day: date, every: int) -> bool:
-    """
-    Spread refetches evenly: each id is due once every `every` days.
-
-    Parameters:
-      native_id: Record id.
-      day: Current date.
-      every: Cycle length in days.
-    Returns:
-      True on the id's day in the cycle.
-    """
-    digest = hashlib.sha256(native_id.encode()).digest()
-    return day.toordinal() % every == int.from_bytes(digest[:8]) % every
-
-
 class JsonLdSource:
     """Discovers event pages and stores their schema.org Event nodes."""
 
@@ -156,7 +133,11 @@ class JsonLdSource:
         """
         self.config = config
         self.params = JsonLdParams.model_validate(config.params)
-        self._zone = ZoneInfo(self.params.default_tz)
+        self._pages = PageHarvester(
+            config.id,
+            ZoneInfo(self.params.default_tz),
+            self.params.refresh_days,
+        )
         self._pattern = (
             re.compile(self.params.url_pattern)
             if self.params.url_pattern
@@ -174,7 +155,10 @@ class JsonLdSource:
         """
         candidates = await self._discover(ctx)
         results = await asyncio.gather(
-            *(self._record(url, listing, ctx) for url, listing in candidates)
+            *(
+                self._pages.record(url, listing, ctx)
+                for url, listing in candidates
+            )
         )
         return [r for r in results if r is not None]
 
@@ -242,72 +226,13 @@ class JsonLdSource:
         """
         return self._pattern is None or bool(self._pattern.search(url))
 
-    async def _record(
-        self, url: str, listing: dict[str, Any] | None, ctx: SourceContext
-    ) -> RawRecord | None:
-        """
-        Reuse the stored record when fresh, otherwise fetch the page.
-
-        Parameters:
-          url: Canonical event page URL (also the native id).
-          listing: Hub listing for change detection.
-          ctx: Run-scoped services.
-        Returns:
-          A raw record, or None if the page failed and nothing is stored.
-        """
-        previous = ctx.previous(self.config.id, url)
-        fresh = (
-            previous is not None
-            and previous.payload.get("listing") == listing
-            and not refresh_due(url, ctx.now.date(), self.params.refresh_days)
-        )
-        if fresh:
-            return previous
-        try:
-            response = await ctx.http.get(url)
-        except HttpError as exc:
-            log.warning("%s: page failed, keeping stored copy: %s", url, exc)
-            return previous
-        nodes = [slim_event(n) for n in events(jsonld_documents(response.text))]
-        return RawRecord(
-            source_id=self.config.id,
-            native_id=url,
-            url=url,
-            payload={"page_url": url, "listing": listing, "events": nodes},
-            fetched_at=ctx.now,
-        )
-
     def parse(self, raw: RawRecord) -> list[EventDraft]:
         """
         Map the page's primary event node to a draft.
-
-        The primary node is the one whose URL matches the page, else the
-        first event on the page.
 
         Parameters:
           raw: Record produced by `fetch`.
         Returns:
           A single draft.
         """
-        nodes = raw.payload.get("events") or []
-        if not nodes:
-            raise ParseError(f"{raw.native_id}: no schema.org Event")
-        page = raw.payload.get("page_url") or raw.native_id
-        primary = next(
-            (
-                n
-                for n in nodes
-                if isinstance(n.get("url"), str)
-                and canonical_url(urljoin(page, n["url"])) == raw.native_id
-            ),
-            nodes[0],
-        )
-        try:
-            fields = event_fields(primary, page, self._zone)
-        except EventMappingError as exc:
-            raise ParseError(f"{raw.native_id}: {exc}") from exc
-        return [
-            EventDraft(
-                source_id=raw.source_id, native_id=raw.native_id, **fields
-            )
-        ]
+        return [self._pages.parse(raw)]

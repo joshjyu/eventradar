@@ -33,6 +33,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_STATE_BUCKET: ${{ secrets.R2_STATE_BUCKET }}
           R2_PUBLIC_BUCKET: ${{ secrets.R2_PUBLIC_BUCKET }}
+          EVENTBRITE_TOKEN: ${{ secrets.EVENTBRITE_TOKEN }}
         run: |
           if [ -n "$R2_ACCOUNT_ID" ]; then
             uv run eventradar run --env production

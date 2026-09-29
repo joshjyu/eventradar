@@ -165,6 +165,21 @@ def save_state(
         store.delete(old)
 
 
+def _compact(conn: sqlite3.Connection, now: datetime, days: int) -> None:
+    """
+    Drop old superseded raw versions and shrink the database file.
+
+    Parameters:
+      conn: State database.
+      now: Run time.
+      days: History to keep for superseded versions.
+    """
+    deleted = RawRecordRepository(conn).prune(now - timedelta(days=days))
+    if deleted:
+        log.info("pruned %d superseded raw records", deleted)
+        conn.execute("VACUUM")
+
+
 def _status(rows: list[SourceRunRow]) -> str:
     """
     Summarize source outcomes into a run status.
@@ -239,6 +254,7 @@ async def run(
         if public is not None and summary.status != "failed":
             upload(public, artifacts)
         runs.finish(run_id, datetime.now(UTC), summary.status)
+        _compact(conn, now, bundle.settings.run.raw_history_days)
         save_state(
             state,
             conn,

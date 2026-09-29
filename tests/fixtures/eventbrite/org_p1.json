@@ -1,0 +1,92 @@
+{
+ "pagination": {
+  "has_more_items": true,
+  "continuation": "abc123",
+  "page_size": 2
+ },
+ "events": [
+  {
+   "id": "90000000001",
+   "name": {
+    "text": "AI Demo Night",
+    "html": "AI Demo Night"
+   },
+   "description": {
+    "text": "Talks, demos, and networking.",
+    "html": "<p>Talks</p>"
+   },
+   "url": "https://www.eventbrite.example.test/e/event-1-tickets-90000000001",
+   "start": {
+    "timezone": "America/Los_Angeles",
+    "local": "",
+    "utc": "2026-10-15T01:00:00Z"
+   },
+   "end": {
+    "timezone": "America/Los_Angeles",
+    "local": "",
+    "utc": "2026-10-15T04:00:00Z"
+   },
+   "status": "live",
+   "online_event": false,
+   "logo": {
+    "url": "https://img.example.test/rotating.png?sig=abc"
+   },
+   "organizer": {
+    "name": "Example Tech Org",
+    "id": "111",
+    "description": {
+     "text": "long"
+    }
+   },
+   "venue": {
+    "name": "Maker Hall",
+    "latitude": "33.6846",
+    "longitude": "-117.8265",
+    "address": {
+     "address_1": "100 Example Ave",
+     "city": "Irvine",
+     "region": "CA",
+     "postal_code": "92618",
+     "country": "US",
+     "localized_address_display": "100 Example Ave, Irvine, CA 92618"
+    }
+   },
+   "capacity": 150
+  },
+  {
+   "id": "90000000002",
+   "name": {
+    "text": "Online Cloud Workshop",
+    "html": "Online Cloud Workshop"
+   },
+   "description": {
+    "text": "Talks, demos, and networking.",
+    "html": "<p>Talks</p>"
+   },
+   "url": "https://www.eventbrite.example.test/e/event-2-tickets-90000000002",
+   "start": {
+    "timezone": "America/Los_Angeles",
+    "local": "",
+    "utc": "2026-10-16T17:00:00Z"
+   },
+   "end": {
+    "timezone": "America/Los_Angeles",
+    "local": "",
+    "utc": "2026-10-16T19:00:00Z"
+   },
+   "status": "live",
+   "online_event": true,
+   "logo": {
+    "url": "https://img.example.test/rotating.png?sig=abc"
+   },
+   "organizer": {
+    "name": "Example Tech Org",
+    "id": "111",
+    "description": {
+     "text": "long"
+    }
+   },
+   "venue": null
+  }
+ ]
+}

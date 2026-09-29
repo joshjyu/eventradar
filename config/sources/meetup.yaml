@@ -1,0 +1,28 @@
+version: 1
+
+# Public GraphQL eventSearch: every (area, query) pair is searched and
+# results are deduplicated by event id. radius_mi is in miles. Keywords are
+# a loose semantic match; the topic category (546 = Technology) is what
+# keeps results on topic.
+sources:
+  - id: meetup-socal-tech
+    adapter: meetup
+    params:
+      areas:
+        - {label: los-angeles, lat: 34.05, lon: -118.24, radius_mi: 25}
+        - {label: orange-county, lat: 33.68, lon: -117.83, radius_mi: 20}
+        - {label: san-diego, lat: 32.72, lon: -117.16, radius_mi: 25}
+        - {label: inland-empire, lat: 33.98, lon: -117.38, radius_mi: 20}
+        - {label: santa-barbara, lat: 34.42, lon: -119.70, radius_mi: 20}
+      queries:
+        - tech
+        - hackathon
+        - developer
+        - AI
+        - startup
+        - data science
+        - programming
+      topic_category_id: "546"
+      pages: 2
+      default_tz: America/Los_Angeles
+      max_events: 1200

@@ -1,0 +1,5 @@
+kind: robots
+agent: eventradar
+paths:
+  - /api/hackathons?page=1
+  - /

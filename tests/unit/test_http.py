@@ -146,3 +146,42 @@ async def test_gzip_body_is_decoded_once() -> None:
     async with HttpClient(_settings()) as http:
         response = await http.get(URL)
     assert response.content == b"BEGIN:VCALENDAR"
+
+
+@respx.mock
+async def test_post_json_sends_body_and_retries() -> None:
+    """JSON bodies are encoded once and resent on retryable errors."""
+    route = respx.post("https://api.example.test/gql").mock(
+        side_effect=[httpx.Response(503), httpx.Response(200, json={"ok": 1})]
+    )
+    async with HttpClient(_settings()) as http:
+        response = await http.post_json(
+            "https://api.example.test/gql", {"query": "{ x }"}
+        )
+    assert response.json() == {"ok": 1}
+    assert route.call_count == 2
+    sent = route.calls[1].request
+    assert sent.headers["Content-Type"] == "application/json"
+    assert sent.content == b'{"query": "{ x }"}'
+
+
+@pytest.mark.parametrize(
+    ("host", "key"),
+    [
+        ("a.devpost.com", "devpost.com"),
+        ("devpost.com", "devpost.com"),
+        ("x.example.co.uk", "example.co.uk"),
+        ("api.lu.ma", "lu.ma"),
+    ],
+)
+def test_site_key_groups_subdomains(host: str, key: str) -> None:
+    """
+    Subdomains of one site share a rate-limit key.
+
+    Parameters:
+      host: Hostname.
+      key: Expected limiter key.
+    """
+    from eventradar.http.ratelimit import site_key
+
+    assert site_key(host) == key

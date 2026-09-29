@@ -12,6 +12,8 @@ from eventradar.config.schema import HttpSettings, SourceConfig
 from eventradar.http import HttpClient
 from eventradar.sources.base import ParseError, SourceContext
 from eventradar.sources.registry import build_source
+from tests.unit.test_devpost import API as DEVPOST_API
+from tests.unit.test_devpost import listing_url
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 NOW = datetime(2026, 9, 26, tzinfo=UTC)
@@ -56,6 +58,29 @@ CASES: list[tuple[str, str, dict[str, Any], dict[str, str]]] = [
         },
     ),
     (
+        "meetup",
+        "meetup",
+        {
+            "endpoint": "https://api.meetup.example.test/gql-ext",
+            "areas": [{"label": "x", "lat": 34, "lon": -118, "radius_mi": 5}],
+            "queries": ["tech"],
+            "default_tz": LA,
+        },
+        {"https://api.meetup.example.test/gql-ext": "meetup/page2.json"},
+    ),
+    (
+        "devpost",
+        "devpost",
+        {"endpoint": DEVPOST_API, "default_tz": LA},
+        {
+            listing_url(1): "devpost/list_p1.json",
+            listing_url(2): "devpost/list_p2.json",
+            "https://alpha-hack.devpost.example.test/": "devpost/alpha.html",
+            "https://beta-hack.devpost.example.test/": "devpost/beta.html",
+            "https://gamma-hack.devpost.example.test/": "devpost/gamma.html",
+        },
+    ),
+    (
         "jsonld-urls",
         "jsonld",
         {
@@ -89,7 +114,9 @@ async def test_adapter_contract(
     """
     for url, fixture in routes.items():
         body = (FIXTURES / fixture).read_bytes()
-        respx.get(url).mock(return_value=httpx.Response(200, content=body))
+        respx.route(url=url).mock(
+            return_value=httpx.Response(200, content=body)
+        )
     config = SourceConfig(id="contract-src", adapter=adapter, params=params)
     source = build_source(config)
     settings = HttpSettings(

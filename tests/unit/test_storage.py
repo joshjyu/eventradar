@@ -178,3 +178,35 @@ def test_same_page_from_two_sources_is_one_event(
     repo.link_profile(first.event_id, "p", NOW)
     [event] = repo.upcoming("p", NOW)
     assert {s.source_id for s in event.sources} == {"src-a", "src-b"}
+
+
+def test_prune_keeps_latest_and_recent_versions(
+    conn: sqlite3.Connection,
+) -> None:
+    """Only superseded versions older than the cutoff are removed."""
+    repo = RawRecordRepository(conn)
+    base = RawRecord(
+        source_id="src-a", native_id="1", payload={"v": 0}, fetched_at=NOW
+    )
+    for day in range(4):
+        repo.insert_if_changed(
+            base.model_copy(
+                update={
+                    "payload": {"v": day},
+                    "fetched_at": NOW + timedelta(days=day),
+                }
+            ),
+            "run-1",
+        )
+    lonely = base.model_copy(update={"native_id": "2"})
+    repo.insert_if_changed(lonely, "run-1")
+    deleted = repo.prune(NOW + timedelta(days=2))
+    assert deleted == 2
+    remaining = conn.execute(
+        "SELECT native_id, payload FROM raw_records ORDER BY 1, fetched_at"
+    ).fetchall()
+    assert [(r[0], r[1]) for r in remaining] == [
+        ("1", '{"v": 2}'),
+        ("1", '{"v": 3}'),
+        ("2", '{"v": 0}'),
+    ]
