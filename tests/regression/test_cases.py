@@ -13,6 +13,9 @@ Kinds:
            Expected: per fetch, record count, changed ids, parsed drafts.
   robots   case.yaml: agent, paths. input/robots.txt is parsed for the
            agent. Expected: {path: allowed} for each path.
+  parse    case.yaml: adapter, params. input/records.json holds stored raw
+           records (from `eventradar regression capture`). Expected: per
+           record, its drafts or error type.
 """
 
 import json
@@ -28,6 +31,7 @@ import yaml
 from eventradar.config.schema import HttpSettings, SourceConfig
 from eventradar.http import HttpClient
 from eventradar.http.robots import parse_robots
+from eventradar.regression import parse_records
 from eventradar.sources.base import SourceContext
 from eventradar.sources.registry import build_source
 
@@ -121,6 +125,9 @@ async def test_regression_case(case_dir: Path, update_golden: bool) -> None:
     kind = case.get("kind", "adapter")
     if kind == "robots":
         actual: Any = _robots_case(case_dir, case)
+    elif kind == "parse":
+        records = json.loads((case_dir / "input/records.json").read_text())
+        actual = parse_records(case["adapter"], case["params"], records)
     else:
         actual = await _adapter_case(case_dir, case)
     expected_path = case_dir / "expected.json"

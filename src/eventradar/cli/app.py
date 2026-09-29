@@ -6,7 +6,7 @@ from typing import Annotated
 
 import typer
 
-from eventradar.cli import config_cmd, source_cmd
+from eventradar.cli import config_cmd, regression_cmd, source_cmd
 from eventradar.cli.common import (
     DEFAULT_CONFIG,
     DEFAULT_ENV,
@@ -20,6 +20,9 @@ from eventradar.pipeline.runner import RunOptions, replay, run
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 app.add_typer(config_cmd.app, name="config", help="Inspect configuration.")
 app.add_typer(source_cmd.app, name="source", help="Work with sources.")
+app.add_typer(
+    regression_cmd.app, name="regression", help="Manage regression cases."
+)
 
 
 @app.callback()
