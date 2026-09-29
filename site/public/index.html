@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SoCal Tech Events · eventradar</title>
+    <meta
+      name="description"
+      content="Hackathons, conferences, workshops, and tech meetups across Southern California, updated daily from public calendars."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="SoCal tech events"
+      href="/v1/socal-tech/feed.xml"
+    />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#events">Skip to events</a>
+    <header class="site-header">
+      <div class="wrap">
+        <h1>SoCal Tech Events</h1>
+        <p class="tagline">
+          Hackathons, conferences, workshops, and meetups across Southern
+          California, collected every morning from public calendars.
+        </p>
+        <p class="status" id="status" aria-live="polite">Loading events…</p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="controls" aria-label="Filter events">
+        <label class="search">
+          <span class="visually-hidden">Search events</span>
+          <input
+            id="q"
+            type="search"
+            placeholder="Search titles, venues, cities"
+            autocomplete="off"
+          />
+        </label>
+        <div class="chips" role="group" aria-label="Event kind">
+          <button type="button" class="chip" data-kind="" aria-pressed="true">All</button>
+          <button type="button" class="chip" data-kind="hackathon" aria-pressed="false">Hackathons</button>
+          <button type="button" class="chip" data-kind="conference" aria-pressed="false">Conferences</button>
+          <button type="button" class="chip" data-kind="workshop" aria-pressed="false">Workshops</button>
+          <button type="button" class="chip" data-kind="meetup" aria-pressed="false">Meetups</button>
+        </div>
+        <label class="toggle">
+          <input id="new-only" type="checkbox" />
+          New this week
+        </label>
+      </section>
+
+      <p id="summary" class="summary" aria-live="polite"></p>
+      <div id="events" class="events">
+        <noscript><p class="empty">This page needs JavaScript. The raw feed is at /v1/socal-tech/events.json.</p></noscript>
+      </div>
+
+      <section class="panel" aria-labelledby="subscribe-heading">
+        <h2 id="subscribe-heading">Subscribe</h2>
+        <ul class="links">
+          <li><a id="calendar-link" href="#">Add to your calendar app</a> (updates automatically)</li>
+          <li><a id="ics-link" href="#">Download .ics</a></li>
+          <li><a id="rss-link" href="#">RSS feed</a> of new events</li>
+          <li><a id="json-link" href="#">JSON API</a> (<a href="https://github.com/joshjyu/eventradar/blob/main/docs/api.md">schema</a>)</li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="about-heading">
+        <h2 id="about-heading">How it works</h2>
+        <p>
+          A scheduled job reads structured, public event data: Luma and
+          community calendars (iCalendar), Meetup's and Devpost's APIs, and
+          schema.org markup on event pages. It never scrapes page layouts,
+          and it honors every site's robots.txt.
+        </p>
+        <p>
+          Events are geocoded, deduplicated across platforms, filtered to
+          Southern California's eight counties and to tech topics, and
+          published as static JSON, iCalendar, and RSS. A Cloudflare Worker
+          starts the run each morning; sources that break are detected and
+          reported automatically.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>
+          Built by Joshua Yu ·
+          <a href="https://github.com/joshjyu/eventradar">Source on GitHub</a>
+          · Event details belong to their organizers; check the event page
+          before you go.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
