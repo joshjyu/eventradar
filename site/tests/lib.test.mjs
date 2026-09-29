@@ -4,17 +4,22 @@ import { test } from "node:test";
 
 import {
   DEFAULT_PAGE_SIZE,
+  areaOf,
   cityOf,
   dayHeading,
   filterEvents,
-  groupByDay,
+  groupEvents,
   localDay,
   pageSize,
   paginate,
   placeLabel,
+  platformOf,
   platforms,
+  sortEvents,
+  sortOrder,
   summaryText,
   timeRange,
+  whenLabel,
 } from "../public/lib.js";
 
 const NOW = new Date("2026-10-01T00:00:00Z");
@@ -54,11 +59,31 @@ test("city and place labels", () => {
   assert.equal(cityOf("858 Production Pl, Newport Beach, CA 92663, US"), "Newport Beach");
   assert.equal(cityOf("Irvine, California"), "Irvine");
   assert.equal(cityOf("Somewhere"), "");
+  assert.equal(cityOf("2522 N Ontario St, Burbank, ca, 91504, us"), "Burbank");
+  assert.equal(cityOf("Los Angeles, California, US"), "Los Angeles");
+  assert.equal(cityOf("Toronto, Ontario, Canada"), "");
+  assert.equal(cityOf("Somewhere, US"), "");
+  assert.equal(
+    cityOf("2701 Fairview Rd, Costa Mesa, CA 92626, USA, California"),
+    "Costa Mesa",
+  );
+  assert.equal(
+    cityOf("9736 Engineers Ln, La Jolla, CA 92093, USA, San Diego, California"),
+    "San Diego",
+  );
+  assert.equal(
+    cityOf("832 S. Olive St Los Angeles, Ca 90014, Los Angeles, CA, 90014, us"),
+    "Los Angeles",
+  );
   assert.equal(
     placeLabel(event({ venue: "Hall", address: "1 Main St, Pasadena, CA" })),
     "Hall · Pasadena",
   );
   assert.equal(placeLabel(event({ attendance_mode: "online" })), "Online");
+  assert.equal(
+    placeLabel(event({ venue: "Hall", address: null, area: "Orange County" })),
+    "Hall · Orange County",
+  );
 });
 
 test("platform names are deduplicated", () => {
@@ -90,12 +115,12 @@ test("grouping keeps order within days", () => {
   const a = event({ title: "A", start_utc: "2026-10-15T01:00:00Z" });
   const b = event({ title: "B", start_utc: "2026-10-15T02:00:00Z" });
   const c = event({ title: "C", start_utc: "2026-10-16T18:00:00Z" });
-  const groups = groupByDay([a, b, c]);
+  const groups = groupEvents(sortEvents([a, b, c], "date"), "date");
   assert.deepEqual(
     groups.map(([day, list]) => [day, list.map((e) => e.title)]),
     [
-      ["2026-10-14", ["A", "B"]],
-      ["2026-10-16", ["C"]],
+      ["Wednesday, October 14", ["A", "B"]],
+      ["Friday, October 16", ["C"]],
     ],
   );
 });
@@ -133,4 +158,60 @@ test("summaryText mentions the range only when paging", () => {
   );
   assert.equal(summaryText(paginate(items, 0, 1), 40, 40), "40 upcoming events");
   assert.equal(summaryText(paginate(items, 50, 1), 40, 169), "40 of 169 upcoming events");
+});
+
+test("sortOrder falls back to date", () => {
+  assert.equal(sortOrder("city"), "city");
+  assert.equal(sortOrder("source"), "source");
+  assert.equal(sortOrder("nope"), "date");
+  assert.equal(sortOrder(null), "date");
+});
+
+test("city order groups alphabetically, catch-alls last, by time within", () => {
+  const events = [
+    event({ title: "A", start_utc: "2026-10-01T01:00:00Z", address: "1 Main St, Irvine, CA" }),
+    event({ title: "B", start_utc: "2026-10-02T01:00:00Z", address: null }),
+    event({ title: "F", start_utc: "2026-10-02T02:00:00Z", address: null, area: "Orange County" }),
+    event({ title: "C", start_utc: "2026-10-03T01:00:00Z", attendance_mode: "online" }),
+    event({ title: "D", start_utc: "2026-10-04T01:00:00Z", address: "Burbank, ca, 91504, us" }),
+    event({ title: "E", start_utc: "2026-10-05T01:00:00Z", address: "irvine, CA 92618" }),
+  ];
+  const groups = groupEvents(sortEvents(events, "city"), "city");
+  assert.deepEqual(
+    groups.map(([heading, list]) => [heading, list.map((e) => e.title)]),
+    [
+      ["Burbank", ["D"]],
+      ["Irvine", ["A", "E"]],
+      ["Orange County", ["F"]],
+      ["Online", ["C"]],
+      ["Location not listed", ["B"]],
+    ],
+  );
+  assert.equal(areaOf(events[1]), "Location not listed");
+});
+
+test("source order groups by first platform", () => {
+  const events = [
+    event({ title: "A", sources: [{ source_id: "meetup-socal-tech" }] }),
+    event({ title: "B", sources: [{ source_id: "mlh-hackathons" }] }),
+    event({ title: "C", sources: [{ source_id: "luma-la-city" }, { source_id: "meetup-socal-tech" }] }),
+  ];
+  const groups = groupEvents(sortEvents(events, "source"), "source");
+  assert.deepEqual(
+    groups.map(([heading, list]) => [heading, list.map((e) => e.title)]),
+    [
+      ["Luma", ["C"]],
+      ["Meetup", ["A"]],
+      ["MLH", ["B"]],
+    ],
+  );
+  assert.equal(platformOf(event({ sources: [] })), "Other");
+});
+
+test("whenLabel adds the day only for same-day events", () => {
+  const sameDay = event({});
+  assert.equal(whenLabel(sameDay, false), timeRange(sameDay));
+  assert.equal(whenLabel(sameDay, true), `Wed, Oct 14 · ${timeRange(sameDay)}`);
+  const multiDay = event({ end_utc: "2026-10-17T01:00:00Z" });
+  assert.equal(whenLabel(multiDay, true), timeRange(multiDay));
 });

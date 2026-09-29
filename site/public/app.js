@@ -7,16 +7,17 @@
 
 import {
   DEFAULT_PAGE_SIZE,
-  dayHeading,
   filterEvents,
-  groupByDay,
+  groupEvents,
   isNew,
   pageSize,
   paginate,
   placeLabel,
   platforms,
+  sortEvents,
+  sortOrder,
   summaryText,
-  timeRange,
+  whenLabel,
 } from "./lib.js";
 
 const params = new URLSearchParams(location.search);
@@ -54,8 +55,8 @@ function el(tag, className, text) {
 /**
  * Read the current filters from the controls.
  *
- * @returns {{query: string, kind: string, newOnly: boolean, size: number}}
- *   Filters and page size (0 for all).
+ * @returns {{query: string, kind: string, newOnly: boolean, sort: string,
+ *   size: number}} Filters, sort order, and page size (0 for all).
  */
 function currentFilters() {
   const pressed = document.querySelector(".chip[aria-pressed='true']");
@@ -63,6 +64,7 @@ function currentFilters() {
     query: $("q").value.trim(),
     kind: pressed ? pressed.dataset.kind : "",
     newOnly: $("new-only").checked,
+    sort: sortOrder($("sort").value),
     size: pageSize($("per-page").value),
   };
 }
@@ -70,8 +72,8 @@ function currentFilters() {
 /**
  * Mirror the filters and page in the address bar so views can be shared.
  *
- * @param {{query: string, kind: string, newOnly: boolean, size: number}}
- *   filters Filters and page size.
+ * @param {{query: string, kind: string, newOnly: boolean, sort: string,
+ *   size: number}} filters Filters, sort order, and page size.
  * @param {number} shownPage Page being shown.
  */
 function saveFilters(filters, shownPage) {
@@ -80,6 +82,7 @@ function saveFilters(filters, shownPage) {
   if (filters.query) next.set("q", filters.query);
   if (filters.kind) next.set("kind", filters.kind);
   if (filters.newOnly) next.set("new", "1");
+  if (filters.sort !== "date") next.set("sort", filters.sort);
   if (filters.size !== DEFAULT_PAGE_SIZE) {
     next.set("show", filters.size ? String(filters.size) : "all");
   }
@@ -94,6 +97,7 @@ function saveFilters(filters, shownPage) {
 function restoreFilters() {
   $("q").value = params.get("q") || "";
   $("new-only").checked = params.get("new") === "1";
+  $("sort").value = sortOrder(params.get("sort"));
   const size = pageSize(params.get("show"));
   $("per-page").value = size ? String(size) : "all";
   const kind = params.get("kind") || "";
@@ -107,12 +111,13 @@ function restoreFilters() {
  *
  * @param {object} event Published event.
  * @param {Date} now Reference time.
+ * @param {boolean} withDay Show the date (headings are not days).
  * @returns {HTMLElement} The card.
  */
-function card(event, now) {
+function card(event, now, withDay) {
   const item = el("li", "event");
   if (event.status === "cancelled") item.classList.add("cancelled");
-  item.append(el("p", "when", timeRange(event)));
+  item.append(el("p", "when", whenLabel(event, withDay)));
   const title = el("h3", "title");
   if (event.url && /^https?:\/\//.test(event.url)) {
     const link = el("a", "", event.title);
@@ -148,7 +153,7 @@ function card(event, now) {
 function render(events) {
   const now = new Date();
   const filters = currentFilters();
-  const matched = filterEvents(events, filters, now);
+  const matched = sortEvents(filterEvents(events, filters, now), filters.sort);
   const view = paginate(matched, filters.size, page);
   page = view.page;
   saveFilters(filters, page);
@@ -163,11 +168,12 @@ function render(events) {
     container.append(el("p", "empty", "No events match these filters."));
     return;
   }
-  for (const [day, dayEvents] of groupByDay(view.items)) {
+  const withDay = filters.sort !== "date";
+  for (const [heading, group] of groupEvents(view.items, filters.sort)) {
     const section = el("section", "day");
-    section.append(el("h2", "", dayHeading(day)));
+    section.append(el("h2", "", heading));
     const list = el("ol", "event-list");
-    for (const event of dayEvents) list.append(card(event, now));
+    for (const event of group) list.append(card(event, now, withDay));
     section.append(list);
     container.append(section);
   }
@@ -230,6 +236,7 @@ async function main() {
   $("q").addEventListener("input", refilter);
   $("new-only").addEventListener("change", refilter);
   $("per-page").addEventListener("change", refilter);
+  $("sort").addEventListener("change", refilter);
   $("prev-page").addEventListener("click", () => turn(-1));
   $("next-page").addEventListener("click", () => turn(1));
   for (const chip of document.querySelectorAll(".chip")) {

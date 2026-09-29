@@ -34,7 +34,7 @@ rules: [docs/api.md](docs/api.md).
 ## How it runs
 
 1. A Cloudflare Worker cron starts the `daily` GitHub Actions workflow at
-   13:17 UTC ([docs/scheduler.md](docs/scheduler.md)).
+   12:00 UTC ([docs/scheduler.md](docs/scheduler.md)).
 2. The workflow fetches every enabled source, updates the SQLite state
    kept in a private R2 bucket, and publishes feeds to a second bucket.
 3. Cloudflare Pages serves the page in `site/` and the feeds from that

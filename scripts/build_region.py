@@ -58,6 +58,7 @@ def build(region_id: str, name: str, state: str, counties: list[str]) -> int:
                 "type": "Feature",
                 "properties": {
                     "county": f["properties"]["BASENAME"],
+                    "name": f"{f['properties']['BASENAME']} County",
                     "geoid": f["properties"]["GEOID"],
                 },
                 "geometry": f["geometry"],

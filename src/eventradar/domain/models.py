@@ -112,3 +112,6 @@ class Event(_EventFields):
     first_seen: AwareDatetime
     last_seen: AwareDatetime
     sources: tuple[EventSourceRef, ...] = ()
+    # Named part of the profile's region containing the event's
+    # coordinates (e.g. a county); set when publishing.
+    area: str | None = None

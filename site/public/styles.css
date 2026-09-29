@@ -161,14 +161,14 @@ input:focus-visible {
   font-size: 0.875rem;
 }
 
-.per-page {
+.picker {
   display: flex;
   gap: 6px;
   align-items: center;
   font-size: 0.875rem;
 }
 
-.per-page select,
+.picker select,
 .pager button {
   padding: 6px 10px;
   font: inherit;

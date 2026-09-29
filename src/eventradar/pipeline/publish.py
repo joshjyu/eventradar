@@ -4,6 +4,8 @@ from collections.abc import Sequence
 from datetime import datetime, timedelta
 
 from eventradar.config.schema import ConfigBundle, ProfileConfig
+from eventradar.domain.models import Event
+from eventradar.geo.region import Region, load_region
 from eventradar.publishing.artifacts import Artifact
 from eventradar.publishing.ical_feed import ical_artifact
 from eventradar.publishing.json_feed import feed_artifacts
@@ -36,9 +38,13 @@ def render_profile(
       Artifacts to upload and the published counts.
     """
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    upcoming = events.upcoming(profile.id, now)
-    added = events.added_between(
-        profile.id, day_start, day_start + timedelta(days=1), now
+    region = load_region(bundle.regions[profile.region])
+    upcoming = _with_areas(events.upcoming(profile.id, now), region)
+    added = _with_areas(
+        events.added_between(
+            profile.id, day_start, day_start + timedelta(days=1), now
+        ),
+        region,
     )
     wanted = bundle.profile_sources(profile)
     rows = [r for r in source_rows if r.source_id in wanted]
@@ -50,6 +56,25 @@ def render_profile(
         manifest_artifact(profile, run_id, now, counts, rows),
     ]
     return artifacts, counts
+
+
+def _with_areas(events: Sequence[Event], region: Region) -> list[Event]:
+    """
+    Label each located event with the part of the region it is in.
+
+    Parameters:
+      events: Events to publish.
+      region: The profile's region.
+    Returns:
+      The events, with `area` set where the coordinates fall in a named
+      part of the region.
+    """
+    return [
+        e.model_copy(update={"area": region.area_of(e.lat, e.lon)})
+        if e.lat is not None and e.lon is not None
+        else e
+        for e in events
+    ]
 
 
 def upload(store: BlobStore, artifacts: Sequence[Artifact]) -> None:

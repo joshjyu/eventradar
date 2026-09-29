@@ -40,6 +40,30 @@ def test_socal_boundary(
     assert load_region(SOCAL).contains(lat, lon) is inside, name
 
 
+@pytest.mark.parametrize(
+    ("lat", "lon", "area"),
+    [
+        (34.0092, -118.4973, "Los Angeles County"),
+        (33.6073, -117.9295, "Orange County"),
+        (32.8505, -117.2713, "San Diego County"),
+        (33.8303, -116.5453, "Riverside County"),
+        (36.1699, -115.1398, None),
+    ],
+)
+def test_area_of_names_the_county(
+    lat: float, lon: float, area: str | None
+) -> None:
+    """
+    Points are labeled with the county feature that contains them.
+
+    Parameters:
+      lat: Latitude.
+      lon: Longitude.
+      area: Expected feature name.
+    """
+    assert load_region(SOCAL).area_of(lat, lon) == area
+
+
 def test_holes_are_excluded() -> None:
     """A point in a polygon's hole is outside."""
     square = [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
