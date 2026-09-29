@@ -23,9 +23,9 @@ class ProfileFilter:
         Decide membership.
 
         Online events need `include_online`. Located events must fall in
-        the region; unlocated ones need a region-trusted source. Every
-        event must match the topic, with weaker evidence required when a
-        source is topic-trusted.
+        the region; unlocated ones need a region-trusted source. Events
+        from a `topic_always` source are on the topic; others must match
+        it, with weaker evidence required when a source is topic-trusted.
 
         Parameters:
           event: Candidate event.
@@ -42,6 +42,8 @@ class ProfileFilter:
                     return False
             elif not event.sources & set(trust.region):
                 return False
+        if event.sources & set(trust.topic_always):
+            return True
         trusted = bool(event.sources & set(trust.topic))
         return self.topic.matches(event.title, event.description, trusted)
 

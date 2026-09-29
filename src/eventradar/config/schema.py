@@ -94,6 +94,8 @@ class SourceConfig(_Strict):
     enabled: bool = True
     # Higher wins when sources describe the same event differently.
     priority: int = Field(default=50, ge=0, le=100)
+    # Kinds for this source's events when title rules find none.
+    default_kinds: list[EventKind] = Field(default_factory=list)
     params: dict[str, Any] = Field(default_factory=dict)
     slo: SloSettings = SloSettings()
 
@@ -112,6 +114,8 @@ class ProfileTrust(_Strict):
     region: list[ConfigId] = Field(default_factory=list)
     # Events from these sources need weaker keyword evidence for the topic.
     topic: list[ConfigId] = Field(default_factory=list)
+    # Events from these sources are on the topic without keyword evidence.
+    topic_always: list[ConfigId] = Field(default_factory=list)
 
 
 class ProfileConfig(_Strict):

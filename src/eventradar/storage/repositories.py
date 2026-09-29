@@ -808,21 +808,28 @@ class EventRepository:
             removed += cur.rowcount
         return added, removed
 
-    def upcoming_titles(self, now: datetime) -> list[tuple[str, str]]:
+    def upcoming_titles(
+        self, now: datetime
+    ) -> list[tuple[str, str, frozenset[str]]]:
         """
         List upcoming events for classification.
 
         Parameters:
           now: Reference time.
         Returns:
-          (event_id, title) pairs.
+          (event_id, title, source ids) triples.
         """
         rows = self._conn.execute(
-            "SELECT event_id, title FROM events "
-            "WHERE COALESCE(end_utc, start_utc) >= ?",
+            "SELECT e.event_id, e.title, group_concat(s.source_id) AS srcs "
+            "FROM events e JOIN event_sources s USING (event_id) "
+            "WHERE COALESCE(e.end_utc, e.start_utc) >= ? "
+            "GROUP BY e.event_id",
             (to_db(now),),
         )
-        return [(r["event_id"], r["title"]) for r in rows]
+        return [
+            (r["event_id"], r["title"], frozenset(r["srcs"].split(",")))
+            for r in rows
+        ]
 
     def set_rule_kinds(self, event_id: str, kinds: Iterable[EventKind]) -> None:
         """

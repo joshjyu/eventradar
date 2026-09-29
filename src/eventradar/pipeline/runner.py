@@ -250,7 +250,10 @@ async def run(
                 conn, events, build_geocoder(geo), http, now, geo
             )
         summary.merged = resolve(conn, events, now)
-        classify_kinds(conn, events, KindClassifier(bundle.kinds), now)
+        defaults = {i: s.default_kinds for i, s in bundle.sources.items()}
+        classify_kinds(
+            conn, events, KindClassifier(bundle.kinds), now, defaults
+        )
         artifacts = []
         with transaction(conn):
             for profile in profiles:

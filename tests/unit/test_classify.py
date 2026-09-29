@@ -1,5 +1,7 @@
 """Tests for phrase matching, topic rules, and kind rules."""
 
+from pathlib import Path
+
 from eventradar.classify.kinds import KindClassifier
 from eventradar.classify.phrases import PhraseSet
 from eventradar.classify.topic import TopicMatcher
@@ -51,3 +53,48 @@ def test_kinds_from_title() -> None:
         EventKind.MEETUP,
     }
     assert kinds.kinds("Quarterly review") == frozenset()
+
+
+def test_source_default_kinds_apply_only_without_rule_matches(
+    tmp_path: Path,
+) -> None:
+    """
+    Title rules win; source defaults fill in when rules find nothing.
+
+    Parameters:
+      tmp_path: Pytest temporary directory.
+    """
+    from datetime import UTC, datetime, timedelta
+
+    from eventradar.domain.models import EventDraft
+    from eventradar.pipeline.classify import classify_kinds
+    from eventradar.storage.db import connect, migrate
+    from eventradar.storage.repositories import EventRepository
+
+    now = datetime(2026, 10, 1, tzinfo=UTC)
+    conn = connect(tmp_path / "s.db")
+    migrate(conn)
+    ids = iter(["E1", "E2"])
+    repo = EventRepository(conn, id_factory=lambda: next(ids))
+    for native, title in (("1", "Python Workshop"), ("2", "Monthly Gathering")):
+        repo.upsert_draft(
+            EventDraft(
+                source_id="src",
+                native_id=native,
+                title=title,
+                start_utc=now + timedelta(days=1),
+            ),
+            "h",
+            now,
+        )
+    rules = KindRules(version=1, kinds={EventKind.WORKSHOP: ["workshop"]})
+    classify_kinds(
+        conn, repo, KindClassifier(rules), now, {"src": [EventKind.MEETUP]}
+    )
+    for event_id in ("E1", "E2"):
+        repo.link_profile(event_id, "p", now)
+    kinds = {e.event_id: e.kinds for e in repo.upcoming("p", now)}
+    assert kinds == {
+        "E1": frozenset({EventKind.WORKSHOP}),
+        "E2": frozenset({EventKind.MEETUP}),
+    }

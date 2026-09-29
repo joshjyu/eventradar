@@ -152,7 +152,7 @@ def _check_profiles(
       problems: Accumulator for error messages.
     """
     for p in profiles.values():
-        trusted = [*p.trust.region, *p.trust.topic]
+        trusted = [*p.trust.region, *p.trust.topic, *p.trust.topic_always]
         problems.extend(
             f"profile '{p.id}': trust names unknown source '{s}'"
             for s in trusted
