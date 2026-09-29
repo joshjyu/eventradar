@@ -1,0 +1,102 @@
+{
+ "data": {
+  "eventSearch": {
+   "pageInfo": {
+    "hasNextPage": true,
+    "endCursor": "Mg=="
+   },
+   "edges": [
+    {
+     "node": {
+      "id": "300000001",
+      "title": "Rust Night",
+      "description": "Talks and demos. Talks and demos. Talks and demos. ",
+      "dateTime": "2026-10-13T18:00:00-07:00",
+      "endTime": "2026-10-13T20:00:00-07:00",
+      "eventType": "PHYSICAL",
+      "status": "ACTIVE",
+      "eventUrl": "https://www.meetup.com/example-group-1/events/300000001/",
+      "rsvps": {
+       "totalCount": 42
+      },
+      "venue": {
+       "name": "Venue 1",
+       "address": "100 Example St",
+       "city": "Irvine",
+       "state": "CA",
+       "postalCode": "92618",
+       "country": "us",
+       "lat": 33.68,
+       "lon": -117.83
+      },
+      "group": {
+       "name": "Example Group 1",
+       "urlname": "example-group-1",
+       "timezone": "America/Los_Angeles"
+      }
+     }
+    },
+    {
+     "node": {
+      "id": "300000002",
+      "title": "Online Python Hour",
+      "description": "Talks and demos. Talks and demos. Talks and demos. ",
+      "dateTime": "2026-10-14T18:00:00-07:00",
+      "endTime": "2026-10-14T20:00:00-07:00",
+      "eventType": "ONLINE",
+      "status": "ACTIVE",
+      "eventUrl": "https://www.meetup.com/example-group-2/events/300000002/",
+      "rsvps": {
+       "totalCount": 10
+      },
+      "venue": {
+       "name": "Online event",
+       "address": "",
+       "city": "",
+       "state": "",
+       "postalCode": "",
+       "country": "",
+       "lat": -8.521147,
+       "lon": 179.1983
+      },
+      "group": {
+       "name": "Example Group 2",
+       "urlname": "example-group-2",
+       "timezone": "America/Los_Angeles"
+      }
+     }
+    },
+    {
+     "node": {
+      "id": "300000003",
+      "title": "Cancelled Robotics Build",
+      "description": "Talks and demos. Talks and demos. Talks and demos. ",
+      "dateTime": "2026-10-15T18:00:00-07:00",
+      "endTime": "2026-10-15T20:00:00-07:00",
+      "eventType": "PHYSICAL",
+      "status": "CANCELLED",
+      "eventUrl": "https://www.meetup.com/example-group-3/events/300000003/",
+      "rsvps": {
+       "totalCount": 10
+      },
+      "venue": {
+       "name": "Venue 3",
+       "address": "300 Example St",
+       "city": "Irvine",
+       "state": "CA",
+       "postalCode": "92618",
+       "country": "us",
+       "lat": 33.68,
+       "lon": -117.83
+      },
+      "group": {
+       "name": "Example Group 3",
+       "urlname": "example-group-3",
+       "timezone": "America/Los_Angeles"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

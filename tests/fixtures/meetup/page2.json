@@ -1,0 +1,72 @@
+{
+ "data": {
+  "eventSearch": {
+   "pageInfo": {
+    "hasNextPage": false,
+    "endCursor": null
+   },
+   "edges": [
+    {
+     "node": {
+      "id": "300000001",
+      "title": "Rust Night",
+      "description": "Talks and demos. Talks and demos. Talks and demos. ",
+      "dateTime": "2026-10-13T18:00:00-07:00",
+      "endTime": "2026-10-13T20:00:00-07:00",
+      "eventType": "PHYSICAL",
+      "status": "ACTIVE",
+      "eventUrl": "https://www.meetup.com/example-group-1/events/300000001/",
+      "rsvps": {
+       "totalCount": 42
+      },
+      "venue": {
+       "name": "Venue 1",
+       "address": "100 Example St",
+       "city": "Irvine",
+       "state": "CA",
+       "postalCode": "92618",
+       "country": "us",
+       "lat": 33.68,
+       "lon": -117.83
+      },
+      "group": {
+       "name": "Example Group 1",
+       "urlname": "example-group-1",
+       "timezone": "America/Los_Angeles"
+      }
+     }
+    },
+    {
+     "node": {
+      "id": "300000004",
+      "title": "Hybrid AI Demo Day",
+      "description": "Talks and demos. Talks and demos. Talks and demos. ",
+      "dateTime": "2026-10-20T18:00:00-07:00",
+      "endTime": "2026-10-20T20:00:00-07:00",
+      "eventType": "HYBRID",
+      "status": "ACTIVE",
+      "eventUrl": "https://www.meetup.com/example-group-4/events/300000004/",
+      "rsvps": {
+       "totalCount": 10
+      },
+      "venue": {
+       "name": "Venue 4",
+       "address": "400 Example St",
+       "city": "Irvine",
+       "state": "CA",
+       "postalCode": "92618",
+       "country": "us",
+       "lat": 33.68,
+       "lon": -117.83
+      },
+      "group": {
+       "name": "Example Group 4",
+       "urlname": "example-group-4",
+       "timezone": "Not/AZone"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

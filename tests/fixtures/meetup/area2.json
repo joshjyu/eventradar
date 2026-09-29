@@ -1,0 +1,42 @@
+{
+ "data": {
+  "eventSearch": {
+   "pageInfo": {
+    "hasNextPage": false,
+    "endCursor": null
+   },
+   "edges": [
+    {
+     "node": {
+      "id": "300000005",
+      "title": "Hardware Hack Night",
+      "description": "Talks and demos. Talks and demos. Talks and demos. ",
+      "dateTime": "2026-11-02T18:00:00-08:00",
+      "endTime": "2026-11-02T20:00:00-08:00",
+      "eventType": "PHYSICAL",
+      "status": "ACTIVE",
+      "eventUrl": "https://www.meetup.com/example-group-5/events/300000005/",
+      "rsvps": {
+       "totalCount": 7
+      },
+      "venue": {
+       "name": "Venue 5",
+       "address": "500 Example St",
+       "city": "Irvine",
+       "state": "CA",
+       "postalCode": "92618",
+       "country": "us",
+       "lat": 33.68,
+       "lon": -117.83
+      },
+      "group": {
+       "name": "Example Group 5",
+       "urlname": "example-group-5",
+       "timezone": "America/Los_Angeles"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

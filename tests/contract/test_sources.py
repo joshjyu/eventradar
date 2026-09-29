@@ -56,6 +56,17 @@ CASES: list[tuple[str, str, dict[str, Any], dict[str, str]]] = [
         },
     ),
     (
+        "meetup",
+        "meetup",
+        {
+            "endpoint": "https://api.meetup.example.test/gql-ext",
+            "areas": [{"label": "x", "lat": 34, "lon": -118, "radius_mi": 5}],
+            "queries": ["tech"],
+            "default_tz": LA,
+        },
+        {"https://api.meetup.example.test/gql-ext": "meetup/page2.json"},
+    ),
+    (
         "jsonld-urls",
         "jsonld",
         {
@@ -89,7 +100,9 @@ async def test_adapter_contract(
     """
     for url, fixture in routes.items():
         body = (FIXTURES / fixture).read_bytes()
-        respx.get(url).mock(return_value=httpx.Response(200, content=body))
+        respx.route(url=url).mock(
+            return_value=httpx.Response(200, content=body)
+        )
     config = SourceConfig(id="contract-src", adapter=adapter, params=params)
     source = build_source(config)
     settings = HttpSettings(
