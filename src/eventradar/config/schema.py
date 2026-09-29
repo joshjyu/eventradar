@@ -24,6 +24,8 @@ class HttpSettings(_Strict):
     max_concurrency: int = Field(default=8, ge=1)
     per_host_min_interval_s: float = Field(default=1.0, ge=0)
     max_retries: int = Field(default=3, ge=0)
+    respect_robots: bool = True
+    max_crawl_delay_s: float = Field(default=30.0, ge=0)
 
 
 class BlobSettings(_Strict):

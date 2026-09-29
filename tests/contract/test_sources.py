@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -14,38 +15,86 @@ from eventradar.sources.registry import build_source
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 NOW = datetime(2026, 9, 26, tzinfo=UTC)
-FEED_URL = "https://feeds.example.test/feed"
+FEED = "https://feeds.example.test/feed"
+HUB = "https://hub.example.test/d/city/tech--events/"
+EV = "https://events.example.test/e"
+LA = "America/Los_Angeles"
 
-# (adapter, params, fixture file served at FEED_URL)
-CASES = [
-    ("ical", {"default_tz": "America/Los_Angeles"}, "ical/utc_feed.ics"),
-    ("ical", {"default_tz": "America/Los_Angeles"}, "ical/edge_cases.ics"),
+# (case id, adapter, params, {served URL: fixture path})
+CASES: list[tuple[str, str, dict[str, Any], dict[str, str]]] = [
+    (
+        "ical-utc",
+        "ical",
+        {"url": FEED, "default_tz": LA},
+        {FEED: "ical/utc_feed.ics"},
+    ),
+    (
+        "ical-edge",
+        "ical",
+        {"url": FEED, "default_tz": LA},
+        {FEED: "ical/edge_cases.ics"},
+    ),
+    (
+        "jsonld-hub",
+        "jsonld",
+        {
+            "discovery": {
+                "type": "hub",
+                "urls": [HUB + "?page={page}"],
+                "pages": 3,
+            },
+            "url_pattern": r"^https://events\.example\.test/e/",
+            "default_tz": LA,
+        },
+        {
+            f"{HUB}?page=1": "jsonld/hub_p1.html",
+            f"{HUB}?page=2": "jsonld/hub_p2.html",
+            f"{HUB}?page=3": "jsonld/hub_p3.html",
+            f"{EV}/robotics-day-101": "jsonld/event_robotics.html",
+            f"{EV}/cloud-summit-102": "jsonld/event_cloud.html",
+            f"{EV}/empty-page-103": "jsonld/event_empty.html",
+        },
+    ),
+    (
+        "jsonld-urls",
+        "jsonld",
+        {
+            "discovery": {
+                "type": "urls",
+                "urls": [f"{EV}/robotics-day-101"],
+            },
+            "default_tz": LA,
+        },
+        {f"{EV}/robotics-day-101": "jsonld/event_robotics.html"},
+    ),
 ]
 
 
-@pytest.mark.parametrize(("adapter", "params", "fixture"), CASES)
+@pytest.mark.parametrize(
+    ("adapter", "params", "routes"),
+    [c[1:] for c in CASES],
+    ids=[c[0] for c in CASES],
+)
 @respx.mock
 async def test_adapter_contract(
-    adapter: str, params: dict[str, object], fixture: str
+    adapter: str, params: dict[str, Any], routes: dict[str, str]
 ) -> None:
     """
     Fetch yields unique records whose parse output is valid and attributed.
 
     Parameters:
       adapter: Registered adapter name.
-      params: Adapter params, excluding the URL.
-      fixture: Fixture path served as the upstream response.
+      params: Adapter params.
+      routes: URLs to serve and the fixtures served at each.
     """
-    respx.get(FEED_URL).mock(
-        return_value=httpx.Response(
-            200, content=(FIXTURES / fixture).read_bytes()
-        )
-    )
-    config = SourceConfig(
-        id="contract-src", adapter=adapter, params={"url": FEED_URL, **params}
-    )
+    for url, fixture in routes.items():
+        body = (FIXTURES / fixture).read_bytes()
+        respx.get(url).mock(return_value=httpx.Response(200, content=body))
+    config = SourceConfig(id="contract-src", adapter=adapter, params=params)
     source = build_source(config)
-    settings = HttpSettings(user_agent="test", per_host_min_interval_s=0)
+    settings = HttpSettings(
+        user_agent="test", per_host_min_interval_s=0, respect_robots=False
+    )
     async with HttpClient(settings) as http:
         records = await source.fetch(SourceContext(http=http, now=NOW))
     assert records

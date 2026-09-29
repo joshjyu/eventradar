@@ -43,7 +43,9 @@ async def _replay_case(case_dir: Path) -> list[dict[str, Any]]:
     source = build_source(
         SourceConfig(id="regression", adapter=case["adapter"], params=params)
     )
-    settings = HttpSettings(user_agent="test", per_host_min_interval_s=0)
+    settings = HttpSettings(
+        user_agent="test", per_host_min_interval_s=0, respect_robots=False
+    )
     seen: dict[str, str] = {}
     fetches = []
     for body in sorted((case_dir / "input").glob("*.body")):

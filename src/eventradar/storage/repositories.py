@@ -237,6 +237,23 @@ class RawRecordRepository:
         )
         return True
 
+    def latest_one(self, source_id: str, native_id: str) -> RawRecord | None:
+        """
+        Return the most recent payload for one source record.
+
+        Parameters:
+          source_id: Source id.
+          native_id: Upstream id.
+        Returns:
+          The record, or None if never stored.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM raw_records WHERE source_id = ? AND native_id = ? "
+            "ORDER BY fetched_at DESC LIMIT 1",
+            (source_id, native_id),
+        ).fetchone()
+        return _row_to_raw(row) if row else None
+
     def latest(
         self, source_ids: Iterable[str] | None = None
     ) -> list[RawRecord]:
@@ -261,16 +278,7 @@ class RawRecordRepository:
         rows = self._conn.execute(
             sql + " ORDER BY source_id, native_id", params
         )
-        return [
-            RawRecord(
-                source_id=r["source_id"],
-                native_id=r["native_id"],
-                url=r["url"],
-                payload=json.loads(r["payload"]),
-                fetched_at=from_db(r["fetched_at"]),
-            )
-            for r in rows
-        ]
+        return [_row_to_raw(r) for r in rows]
 
 
 class EventRepository:
@@ -322,6 +330,14 @@ class EventRepository:
                 (draft.url, content_hash, draft.source_id, draft.native_id),
             )
             return UpsertResult(event_id, created=False)
+        match = self._same_page(draft)
+        if match:
+            self._link_source(draft, content_hash, match)
+            self._conn.execute(
+                "UPDATE events SET last_seen = ? WHERE event_id = ?",
+                (to_db(now), match),
+            )
+            return UpsertResult(match, created=False)
         event_id = self._new_id()
         columns = ", ".join(("event_id", *_EVENT_COLUMNS))
         marks = ", ".join("?" * (len(_EVENT_COLUMNS) + 3))
@@ -330,6 +346,41 @@ class EventRepository:
             f"VALUES ({marks})",
             (event_id, *values, to_db(now), to_db(now)),
         )
+        self._link_source(draft, content_hash, event_id)
+        return UpsertResult(event_id, created=True)
+
+    def _same_page(self, draft: EventDraft) -> str | None:
+        """
+        Find an event already known under the same page and start date.
+
+        Matching on both avoids merging distinct events that share a
+        generic link. Fuzzy cross-source matching happens in `resolve`.
+
+        Parameters:
+          draft: Draft whose URL is already canonical.
+        Returns:
+          The matching event id, or None.
+        """
+        if not draft.url:
+            return None
+        row = self._conn.execute(
+            "SELECT event_id FROM events WHERE url = ? "
+            "AND substr(start_utc, 1, 10) = ? ORDER BY event_id LIMIT 1",
+            (draft.url, to_db(draft.start_utc)[:10]),
+        ).fetchone()
+        return row["event_id"] if row else None
+
+    def _link_source(
+        self, draft: EventDraft, content_hash: str, event_id: str
+    ) -> None:
+        """
+        Record that a source record describes an event.
+
+        Parameters:
+          draft: Draft from the source record.
+          content_hash: Hash of the raw record.
+          event_id: Event the record belongs to.
+        """
         self._conn.execute(
             "INSERT INTO event_sources VALUES (?, ?, ?, ?, ?)",
             (
@@ -340,7 +391,6 @@ class EventRepository:
                 content_hash,
             ),
         )
-        return UpsertResult(event_id, created=True)
 
     def mark_seen(
         self, source_id: str, native_ids: Iterable[str], now: datetime
@@ -484,6 +534,24 @@ class EventRepository:
                     )
                 )
         return {k: tuple(v) for k, v in grouped.items()}
+
+
+def _row_to_raw(row: sqlite3.Row) -> RawRecord:
+    """
+    Rebuild a `RawRecord` from a raw_records row.
+
+    Parameters:
+      row: Row from the raw_records table.
+    Returns:
+      The record model.
+    """
+    return RawRecord(
+        source_id=row["source_id"],
+        native_id=row["native_id"],
+        url=row["url"],
+        payload=json.loads(row["payload"]),
+        fetched_at=from_db(row["fetched_at"]),
+    )
 
 
 def _draft_values(draft: EventDraft) -> tuple[Any, ...]:

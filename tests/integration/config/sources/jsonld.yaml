@@ -1,0 +1,12 @@
+version: 1
+sources:
+  - id: fixture-hub
+    adapter: jsonld
+    params:
+      discovery:
+        type: hub
+        pages: 3
+        urls:
+          - "https://hub.example.test/d/city/tech--events/?page={page}"
+      url_pattern: '^https://events\.example\.test/e/'
+      default_tz: America/Los_Angeles

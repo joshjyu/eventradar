@@ -214,9 +214,12 @@ async def run(
         async with HttpClient(
             bundle.settings.http, transport=transport
         ) as http:
-            results = await fetch_all(
-                bundle.enabled_sources(), SourceContext(http=http, now=now)
+            ctx = SourceContext(
+                http=http,
+                now=now,
+                previous=RawRecordRepository(conn).latest_one,
             )
+            results = await fetch_all(bundle.enabled_sources(), ctx)
         summary.sources = [
             ingest(conn, result, run_id, now, events) for result in results
         ]

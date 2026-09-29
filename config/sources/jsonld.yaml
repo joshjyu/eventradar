@@ -1,0 +1,44 @@
+version: 1
+
+# Eventbrite city hubs: the JSON-LD ItemList on each listing page links to
+# event pages, whose JSON-LD holds the full event. Hubs keep returning
+# loosely related results on later pages, so `pages` is a hard cap.
+sources:
+  - id: eventbrite-la-tech
+    adapter: jsonld
+    params:
+      discovery:
+        type: hub
+        pages: 3
+        urls:
+          - "https://www.eventbrite.com/d/ca--los-angeles/science-and-tech--events/?page={page}"
+          - "https://www.eventbrite.com/d/ca--los-angeles/hackathon/?page={page}"
+      url_pattern: '^https://www\.eventbrite\.com/e/'
+      default_tz: America/Los_Angeles
+      max_events: 150
+
+  - id: eventbrite-oc-tech
+    adapter: jsonld
+    params:
+      discovery:
+        type: hub
+        pages: 2
+        urls:
+          - "https://www.eventbrite.com/d/ca--irvine/science-and-tech--events/?page={page}"
+          - "https://www.eventbrite.com/d/ca--irvine/hackathon/?page={page}"
+      url_pattern: '^https://www\.eventbrite\.com/e/'
+      default_tz: America/Los_Angeles
+      max_events: 100
+
+  - id: eventbrite-sd-tech
+    adapter: jsonld
+    params:
+      discovery:
+        type: hub
+        pages: 3
+        urls:
+          - "https://www.eventbrite.com/d/ca--san-diego/science-and-tech--events/?page={page}"
+          - "https://www.eventbrite.com/d/ca--san-diego/hackathon/?page={page}"
+      url_pattern: '^https://www\.eventbrite\.com/e/'
+      default_tz: America/Los_Angeles
+      max_events: 150
