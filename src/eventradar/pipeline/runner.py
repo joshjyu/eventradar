@@ -45,6 +45,7 @@ from eventradar.storage.repositories import (
     RawRecordRepository,
     RunRepository,
     SourceRunRow,
+    SourceState,
     SourceStateRepository,
     transaction,
 )
@@ -410,3 +411,67 @@ def replay(
             bundle.settings.run.snapshot_retention,
         )
     return written
+
+
+def source_health(bundle: ConfigBundle, env_name: str) -> list[SourceState]:
+    """
+    Read every configured source's health state.
+
+    Parameters:
+      bundle: Loaded config.
+      env_name: Environment whose state is read.
+    Returns:
+      States in source id order.
+    """
+    env = environment(bundle, env_name)
+    state = build_blob(env.state)
+    ttl = timedelta(seconds=bundle.settings.run.lock_ttl_s)
+    with open_state(state, f"health-{ULID()}", ttl) as (conn, _path):
+        states = SourceStateRepository(conn)
+        return [states.get(source_id) for source_id in sorted(bundle.sources)]
+
+
+def enable_source(
+    bundle: ConfigBundle,
+    env_name: str,
+    source_id: str,
+    now: datetime | None = None,
+) -> SourceState:
+    """
+    Mark a source healthy again, e.g. after fixing its adapter.
+
+    Its open alert is closed by the next run that passes its checks.
+
+    Parameters:
+      bundle: Loaded config.
+      env_name: Environment whose state is changed.
+      source_id: Source to re-enable.
+      now: Change time.
+    Returns:
+      The new state.
+    """
+    env = environment(bundle, env_name)
+    now = (now or datetime.now(UTC)).astimezone(UTC)
+    state = build_blob(env.state)
+    ttl = timedelta(seconds=bundle.settings.run.lock_ttl_s)
+    owner = f"enable-{ULID()}"
+    with open_state(state, owner, ttl) as (conn, path):
+        states = SourceStateRepository(conn)
+        current = states.get(source_id)
+        updated = SourceState(
+            source_id=source_id,
+            status="healthy",
+            alerted=current.alerted,
+            last_probe=current.last_probe,
+        )
+        with transaction(conn):
+            states.put(updated, now)
+        save_state(
+            state,
+            conn,
+            path,
+            now,
+            owner,
+            bundle.settings.run.snapshot_retention,
+        )
+    return updated

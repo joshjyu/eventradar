@@ -251,3 +251,23 @@ async def test_replay_needs_no_network(
     assert written["fixture-broken"] == 0
     assert written["fixture-hub"] == 2
     assert written["fixture-far"] == 1
+
+
+@respx.mock
+async def test_health_status_and_manual_enable(bundle: ConfigBundle) -> None:
+    """
+    A failing source shows as unhealthy and can be re-enabled by hand.
+
+    Parameters:
+      bundle: Loaded config.
+    """
+    from eventradar.pipeline.runner import enable_source, source_health
+
+    _mock_feeds()
+    await _run(bundle, NOW, "RUN1")
+    states = {s.source_id: s for s in source_health(bundle, "test")}
+    assert states["fixture-broken"].status == "unhealthy"
+    assert states["fixture-utc"].status == "healthy"
+    assert enable_source(bundle, "test", "fixture-broken").status == "healthy"
+    states = {s.source_id: s for s in source_health(bundle, "test")}
+    assert states["fixture-broken"].unhealthy_runs == 0
