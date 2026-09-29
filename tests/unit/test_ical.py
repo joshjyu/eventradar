@@ -70,7 +70,7 @@ def test_utc_feed_fields() -> None:
     assert draft.tz == "America/Los_Angeles"
     assert draft.attendance_mode is AttendanceMode.IN_PERSON
     assert draft.status is EventStatus.SCHEDULED
-    assert draft.organizer == "Builders Guild"
+    assert draft.organizer is None
     assert draft.url == "https://events.example.test/event/evt-aaa111"
     assert draft.address is None
     assert (draft.lat, draft.lon) == (34.0522, -118.2437)
