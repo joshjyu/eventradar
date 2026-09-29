@@ -32,5 +32,9 @@ profile includes online events, and on the topic (see ADR 0008).
 the address names only a U.S. city, from that city's centroid; treat
 them as approximate.
 
+`area` names the part of the profile's region the event's coordinates
+fall in (for `socal-tech`, the county, e.g. "Orange County"); null when
+the event has no coordinates.
+
 `organizer` is the organizing organization when a source names one; it is
 never a person (ADR 0011).

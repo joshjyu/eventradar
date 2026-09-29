@@ -69,6 +69,18 @@
       "default": null,
       "title": "Address"
     },
+    "area": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Area"
+    },
     "attendance_mode": {
       "$ref": "#/$defs/AttendanceMode",
       "default": "unknown"

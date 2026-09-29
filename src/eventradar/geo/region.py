@@ -14,6 +14,8 @@ class _Polygon:
     """An outer ring with holes, plus its bounding box."""
 
     rings: tuple[Ring, ...]
+    # The enclosing feature's `name` property, e.g. "Orange County".
+    name: str | None
     min_lon: float
     min_lat: float
     max_lon: float
@@ -71,13 +73,30 @@ class Region:
         """
         return any(p.contains(lat, lon) for p in self._polygons)
 
+    def area_of(self, lat: float, lon: float) -> str | None:
+        """
+        Name the part of the region a point lies in.
 
-def _polygons(node: dict[str, Any]) -> list[_Polygon]:
+        Parameters:
+          lat: Latitude.
+          lon: Longitude.
+        Returns:
+          The containing feature's `name` property, or None when the point
+          is outside the region or the feature has no name.
+        """
+        for polygon in self._polygons:
+            if polygon.contains(lat, lon):
+                return polygon.name
+        return None
+
+
+def _polygons(node: dict[str, Any], name: str | None = None) -> list[_Polygon]:
     """
     Flatten GeoJSON into polygons.
 
     Parameters:
       node: GeoJSON object.
+      name: Name of the feature the node belongs to.
     Returns:
       Polygons with bounding boxes.
     """
@@ -85,7 +104,11 @@ def _polygons(node: dict[str, Any]) -> list[_Polygon]:
     if kind == "FeatureCollection":
         return [p for f in node.get("features", []) for p in _polygons(f)]
     if kind == "Feature":
-        return _polygons(node.get("geometry") or {})
+        label = (node.get("properties") or {}).get("name")
+        return _polygons(
+            node.get("geometry") or {},
+            label if isinstance(label, str) else None,
+        )
     if kind == "Polygon":
         shapes = [node["coordinates"]]
     elif kind == "MultiPolygon":
@@ -97,7 +120,9 @@ def _polygons(node: dict[str, Any]) -> list[_Polygon]:
         rings = tuple([(float(x), float(y)) for x, y, *_ in r] for r in shape)
         xs = [x for x, _ in rings[0]]
         ys = [y for _, y in rings[0]]
-        polygons.append(_Polygon(rings, min(xs), min(ys), max(xs), max(ys)))
+        polygons.append(
+            _Polygon(rings, name, min(xs), min(ys), max(xs), max(ys))
+        )
     return polygons
 
 
