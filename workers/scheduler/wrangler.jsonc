@@ -7,8 +7,8 @@
   "workers_dev": false,
   "preview_urls": false,
   "triggers": {
-    // 13:17 UTC = 6:17am PT (PDT).
-    "crons": ["17 13 * * *"]
+    // 12:00 UTC = 5:00am PDT / 4:00am PST.
+    "crons": ["0 12 * * *"]
   },
   "vars": {
     "GITHUB_REPOSITORY": "joshjyu/eventradar",

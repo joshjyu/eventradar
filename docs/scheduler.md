@@ -1,7 +1,8 @@
 # Scheduler (Cloudflare Worker)
 
 `workers/scheduler` is a Cron Trigger Worker that starts the `daily`
-workflow through GitHub's `workflow_dispatch` API every day at 13:17 UTC.
+workflow through GitHub's `workflow_dispatch` API every day at 12:00 UTC
+(5:00am PDT, 4:00am PST).
 GitHub disables `schedule` triggers in public repositories after 60 days
 without commits; dispatches are not affected. The Worker has no HTTP
 endpoint (`workers_dev` and preview URLs are off).
@@ -32,6 +33,19 @@ endpoint (`workers_dev` and preview URLs are off).
 The next morning, the repository's Actions tab shows a `daily` run with
 event `workflow_dispatch`. Failed invocations appear in the Cloudflare
 dashboard under Workers -> `eventradar-scheduler` -> Logs.
+
+## Changing the schedule
+
+Edit `triggers.crons` in `workers/scheduler/wrangler.jsonc` (UTC), merge,
+then redeploy from `workers/scheduler` on `main`:
+
+```bash
+npx wrangler deploy
+```
+
+The Worker is deployed by hand, not from Git, so merging alone changes
+nothing. A new schedule can take up to about 15 minutes to take effect;
+the dashboard's Triggers tab shows the active cron.
 
 ## Rotation
 
