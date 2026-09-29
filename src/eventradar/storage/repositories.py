@@ -275,6 +275,42 @@ class SourceStateRepository:
         return [self.get(r[0]) for r in rows]
 
 
+class MaintenanceRepository:
+    """One-off tasks requested by migrations."""
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        """
+        Bind to a connection.
+
+        Parameters:
+          conn: Open connection.
+        """
+        self._conn = conn
+
+    def pending(self) -> list[str]:
+        """
+        List requested tasks.
+
+        Returns:
+          Task names, oldest first.
+        """
+        rows = self._conn.execute(
+            "SELECT task FROM maintenance_tasks ORDER BY requested_at"
+        )
+        return [r[0] for r in rows]
+
+    def complete(self, task: str) -> None:
+        """
+        Mark a task done.
+
+        Parameters:
+          task: Task name.
+        """
+        self._conn.execute(
+            "DELETE FROM maintenance_tasks WHERE task = ?", (task,)
+        )
+
+
 @dataclass(frozen=True)
 class UpsertResult:
     """Result of writing a draft into the events table."""

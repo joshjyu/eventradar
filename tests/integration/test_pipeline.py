@@ -271,3 +271,33 @@ async def test_health_status_and_manual_enable(bundle: ConfigBundle) -> None:
     assert enable_source(bundle, "test", "fixture-broken").status == "healthy"
     states = {s.source_id: s for s in source_health(bundle, "test")}
     assert states["fixture-broken"].unhealthy_runs == 0
+
+
+@respx.mock
+async def test_requested_reparse_restores_organizations(
+    bundle: ConfigBundle, tmp_path: Path
+) -> None:
+    """
+    A queued reparse refills organization names without refetching.
+
+    Parameters:
+      bundle: Loaded config.
+      tmp_path: Pytest temporary directory.
+    """
+    import sqlite3
+
+    _mock_feeds()
+    await _run(bundle, NOW, "RUN1")
+    db = tmp_path / "state/state/eventradar.db"
+    with sqlite3.connect(db) as conn:
+        conn.execute("UPDATE events SET organizer = NULL")
+        conn.execute(
+            "INSERT INTO maintenance_tasks VALUES ('reparse', '2026-09-26')"
+        )
+    await _run(bundle, NOW + timedelta(hours=1), "RUN2")
+    with sqlite3.connect(db) as conn:
+        pending = conn.execute("SELECT COUNT(*) FROM maintenance_tasks")
+        assert pending.fetchone()[0] == 0
+        organizers = dict(conn.execute("SELECT title, organizer FROM events"))
+    assert organizers["Robotics Day"] == "Robot Club"
+    assert organizers["AI Builders Hack Night"] is None
