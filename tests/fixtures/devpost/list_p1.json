@@ -1,0 +1,38 @@
+{
+ "hackathons": [
+  {
+   "id": 18630,
+   "title": "Alpha Hack",
+   "url": "https://alpha-hack.devpost.example.test/",
+   "displayed_location": {
+    "icon": "map-marker-alt",
+    "location": "Example Hall"
+   },
+   "submission_period_dates": "Nov 21, 2026",
+   "organization_name": "Example University",
+   "invite_only": false,
+   "registrations_count": 120,
+   "time_left_to_submission": "about 2 months left",
+   "thumbnail_url": "https://img.devpost.example.test/x.png"
+  },
+  {
+   "id": 14234,
+   "title": "Beta Hack",
+   "url": "https://beta-hack.devpost.example.test/",
+   "displayed_location": {
+    "icon": "map-marker-alt",
+    "location": "Example Hall"
+   },
+   "submission_period_dates": "Nov 21, 2026",
+   "organization_name": "Example University",
+   "invite_only": false,
+   "registrations_count": 40,
+   "time_left_to_submission": "about 2 months left",
+   "thumbnail_url": "https://img.devpost.example.test/x.png"
+  }
+ ],
+ "meta": {
+  "total_count": 3,
+  "per_page": 2
+ }
+}

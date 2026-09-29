@@ -26,6 +26,7 @@ eventradar = "eventradar.cli:app"
 [project.entry-points."eventradar.sources"]
 ical = "eventradar.sources.protocols.ical:IcalSource"
 jsonld = "eventradar.sources.protocols.jsonld:JsonLdSource"
+devpost = "eventradar.sources.platforms.devpost:DevpostSource"
 meetup = "eventradar.sources.platforms.meetup:MeetupSource"
 
 [project.entry-points."eventradar.blob"]

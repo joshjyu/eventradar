@@ -1,0 +1,23 @@
+{
+ "hackathons": [
+  {
+   "id": 620,
+   "title": "Gamma Hack",
+   "url": "https://gamma-hack.devpost.example.test/",
+   "displayed_location": {
+    "icon": "map-marker-alt",
+    "location": "Example Hall"
+   },
+   "submission_period_dates": "Nov 21, 2026",
+   "organization_name": "Gamma Club",
+   "invite_only": false,
+   "registrations_count": 15,
+   "time_left_to_submission": "about 2 months left",
+   "thumbnail_url": "https://img.devpost.example.test/x.png"
+  }
+ ],
+ "meta": {
+  "total_count": 3,
+  "per_page": 2
+ }
+}
