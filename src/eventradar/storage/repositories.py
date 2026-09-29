@@ -837,22 +837,6 @@ class EventRepository:
             (json.dumps(sorted(k.value for k in kinds)), event_id),
         )
 
-    def source_ids_for(self, event_id: str) -> list[str]:
-        """
-        List the sources that describe an event.
-
-        Parameters:
-          event_id: Event id.
-        Returns:
-          Source ids, sorted.
-        """
-        rows = self._conn.execute(
-            "SELECT DISTINCT source_id FROM event_sources WHERE event_id = ? "
-            "ORDER BY source_id",
-            (event_id,),
-        )
-        return [r[0] for r in rows]
-
     def mark_seen(
         self, source_id: str, native_ids: Iterable[str], now: datetime
     ) -> None:
@@ -889,24 +873,6 @@ class EventRepository:
             (event_id, profile_id, to_db(now)),
         )
         return cur.rowcount == 1
-
-    def event_ids_for_sources(self, source_ids: Iterable[str]) -> list[str]:
-        """
-        List events that have at least one record from the given sources.
-
-        Parameters:
-          source_ids: Source ids.
-        Returns:
-          Distinct event ids.
-        """
-        ids = list(source_ids)
-        rows = self._conn.execute(
-            "SELECT DISTINCT event_id FROM event_sources "  # noqa: S608
-            f"WHERE source_id IN ({','.join('?' * len(ids))}) "
-            "ORDER BY event_id",
-            ids,
-        )
-        return [r[0] for r in rows]
 
     def upcoming(self, profile_id: str, now: datetime) -> list[Event]:
         """
