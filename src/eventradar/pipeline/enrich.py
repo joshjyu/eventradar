@@ -8,7 +8,8 @@ from datetime import datetime, timedelta
 
 from eventradar.config.loader import expand_env
 from eventradar.config.schema import GeoSettings
-from eventradar.geo.geocode.base import Geocoder, GeoPoint
+from eventradar.geo.geocode.base import Geocoder, GeoPoint, Precision
+from eventradar.geo.places import place_centroid
 from eventradar.geo.postal import zip_centroid
 from eventradar.geo.timezone import zone_at
 from eventradar.http import HttpClient, HttpError
@@ -57,6 +58,30 @@ def address_key(address: str) -> str:
     return re.sub(r"\s+", " ", text)
 
 
+def _offline(address: str) -> GeoPoint | None:
+    """
+    Locate an address without the network: its ZIP, else its city.
+
+    Parameters:
+      address: One-line address.
+    Returns:
+      The centroid, or None.
+    """
+    return zip_centroid(address) or place_centroid(address)
+
+
+def _cached_precision(value: str | None) -> Precision:
+    """
+    Read a precision stored in the geocode cache.
+
+    Parameters:
+      value: Stored precision.
+    Returns:
+      The precision; unknown values count as an address match.
+    """
+    return value if value in ("postal", "place") else "address"
+
+
 async def _locate(
     address: str,
     cache: GeocodeCacheRepository,
@@ -67,7 +92,7 @@ async def _locate(
     budget: list[int],
 ) -> GeoPoint | None:
     """
-    Resolve one address from cache, the geocoder, or its ZIP centroid.
+    Resolve one address from cache, the geocoder, or offline centroids.
 
     Parameters:
       address: One-line address.
@@ -84,19 +109,20 @@ async def _locate(
     cached = cache.get(key)
     retry_after = timedelta(days=settings.retry_misses_after_days)
     if cached and cached.lat is not None and cached.lon is not None:
-        precision = "postal" if cached.precision == "postal" else "address"
+        precision = _cached_precision(cached.precision)
         return GeoPoint(cached.lat, cached.lon, precision)
+    # A recent miss skips the geocoder; offline tables may have grown.
     if cached and now - cached.looked_up_at < retry_after:
-        return None
+        return _offline(address)
     if budget[0] <= 0:
-        return zip_centroid(address)
+        return _offline(address)
     budget[0] -= 1
     try:
         point = await geocoder.geocode(address, http)
     except HttpError as exc:
         log.warning("geocoding failed, will retry next run: %s", exc)
-        return zip_centroid(address)
-    point = point or zip_centroid(address)
+        return _offline(address)
+    point = point or _offline(address)
     as_tuple = (point.lat, point.lon, point.precision) if point else None
     cache.put(key, as_tuple, geocoder.name, now)
     return point

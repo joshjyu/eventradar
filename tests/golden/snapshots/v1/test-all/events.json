@@ -12,8 +12,8 @@
         "meetup"
       ],
       "last_seen": "2026-09-26T13:17:00Z",
-      "lat": null,
-      "lon": null,
+      "lat": 33.6784,
+      "lon": -117.77125,
       "organizer": null,
       "schema_version": "1.0",
       "size_signal": null,
