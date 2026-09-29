@@ -6,12 +6,16 @@
  */
 
 import {
+  DEFAULT_PAGE_SIZE,
   dayHeading,
   filterEvents,
   groupByDay,
   isNew,
+  pageSize,
+  paginate,
   placeLabel,
   platforms,
+  summaryText,
   timeRange,
 } from "./lib.js";
 
@@ -28,6 +32,9 @@ const KIND_LABELS = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+// Current page, 1-based; filter changes return to the first page.
+let page = Number(params.get("page")) || 1;
 
 /**
  * Create an element with optional class and text.
@@ -47,7 +54,8 @@ function el(tag, className, text) {
 /**
  * Read the current filters from the controls.
  *
- * @returns {{query: string, kind: string, newOnly: boolean}} Filters.
+ * @returns {{query: string, kind: string, newOnly: boolean, size: number}}
+ *   Filters and page size (0 for all).
  */
 function currentFilters() {
   const pressed = document.querySelector(".chip[aria-pressed='true']");
@@ -55,20 +63,27 @@ function currentFilters() {
     query: $("q").value.trim(),
     kind: pressed ? pressed.dataset.kind : "",
     newOnly: $("new-only").checked,
+    size: pageSize($("per-page").value),
   };
 }
 
 /**
- * Mirror the filters in the address bar so views can be shared.
+ * Mirror the filters and page in the address bar so views can be shared.
  *
- * @param {{query: string, kind: string, newOnly: boolean}} filters Filters.
+ * @param {{query: string, kind: string, newOnly: boolean, size: number}}
+ *   filters Filters and page size.
+ * @param {number} shownPage Page being shown.
  */
-function saveFilters(filters) {
+function saveFilters(filters, shownPage) {
   const next = new URLSearchParams();
   if (PROFILE !== "socal-tech") next.set("profile", PROFILE);
   if (filters.query) next.set("q", filters.query);
   if (filters.kind) next.set("kind", filters.kind);
   if (filters.newOnly) next.set("new", "1");
+  if (filters.size !== DEFAULT_PAGE_SIZE) {
+    next.set("show", filters.size ? String(filters.size) : "all");
+  }
+  if (shownPage > 1) next.set("page", String(shownPage));
   const query = next.toString();
   history.replaceState(null, "", query ? `?${query}` : location.pathname);
 }
@@ -79,6 +94,8 @@ function saveFilters(filters) {
 function restoreFilters() {
   $("q").value = params.get("q") || "";
   $("new-only").checked = params.get("new") === "1";
+  const size = pageSize(params.get("show"));
+  $("per-page").value = size ? String(size) : "all";
   const kind = params.get("kind") || "";
   for (const chip of document.querySelectorAll(".chip")) {
     chip.setAttribute("aria-pressed", String(chip.dataset.kind === kind));
@@ -131,19 +148,22 @@ function card(event, now) {
 function render(events) {
   const now = new Date();
   const filters = currentFilters();
-  saveFilters(filters);
-  const shown = filterEvents(events, filters, now);
+  const matched = filterEvents(events, filters, now);
+  const view = paginate(matched, filters.size, page);
+  page = view.page;
+  saveFilters(filters, page);
   const container = $("events");
   container.replaceChildren();
-  $("summary").textContent =
-    shown.length === events.length
-      ? `${events.length} upcoming events`
-      : `${shown.length} of ${events.length} upcoming events`;
-  if (!shown.length) {
+  $("summary").textContent = summaryText(view, matched.length, events.length);
+  $("pager").hidden = view.pages < 2;
+  $("page-info").textContent = `Page ${view.page} of ${view.pages}`;
+  $("prev-page").disabled = view.page <= 1;
+  $("next-page").disabled = view.page >= view.pages;
+  if (!matched.length) {
     container.append(el("p", "empty", "No events match these filters."));
     return;
   }
-  for (const [day, dayEvents] of groupByDay(shown)) {
+  for (const [day, dayEvents] of groupByDay(view.items)) {
     const section = el("section", "day");
     section.append(el("h2", "", dayHeading(day)));
     const list = el("ol", "event-list");
@@ -195,14 +215,29 @@ async function main() {
   $("ics-link").href = `${BASE}/events.ics`;
   $("rss-link").href = `${BASE}/feed.xml`;
   $("json-link").href = `${BASE}/events.json`;
-  $("q").addEventListener("input", () => render(events));
-  $("new-only").addEventListener("change", () => render(events));
+  const refilter = () => {
+    page = 1;
+    render(events);
+  };
+  const turn = (step) => {
+    page += step;
+    render(events);
+    // Bring the list's top back into view below the sticky controls.
+    const controls = document.querySelector(".controls").offsetHeight;
+    const top = $("summary").getBoundingClientRect().top + scrollY;
+    scrollTo({ top: top - controls - 8 });
+  };
+  $("q").addEventListener("input", refilter);
+  $("new-only").addEventListener("change", refilter);
+  $("per-page").addEventListener("change", refilter);
+  $("prev-page").addEventListener("click", () => turn(-1));
+  $("next-page").addEventListener("click", () => turn(1));
   for (const chip of document.querySelectorAll(".chip")) {
     chip.addEventListener("click", () => {
       for (const other of document.querySelectorAll(".chip")) {
         other.setAttribute("aria-pressed", String(other === chip));
       }
-      render(events);
+      refilter();
     });
   }
   render(events);
