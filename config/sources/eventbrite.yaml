@@ -1,0 +1,23 @@
+version: 1
+
+# Official Eventbrite API v3: live events of curated organizers. Needs a
+# personal OAuth token in EVENTBRITE_TOKEN (see docs/security.md); disabled
+# until that secret exists. Several organizers run events nationwide, so
+# region filtering (M5) decides what reaches each profile.
+sources:
+  - id: eventbrite-tech-organizers
+    adapter: eventbrite
+    enabled: false
+    params:
+      token_env: EVENTBRITE_TOKEN
+      default_tz: America/Los_Angeles
+      organizers:
+        - "110809527771"  # Orange County AI
+        - "7581291137"    # AITP Los Angeles Chapter
+        - "26876790727"   # IEEE Systems Council, Coastal Los Angeles
+        - "8426515580"    # MADIA Tech Launch
+        - "88850176843"   # tech night!
+        - "30021497656"   # Startup Oasis
+        - "5795069502"    # HackerX
+        - "5851454453"    # Hackaday
+        - "108731452361"  # The Founders Club

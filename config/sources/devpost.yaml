@@ -1,0 +1,13 @@
+version: 1
+
+# In-person hackathons listed on Devpost, worldwide. Region filtering (M5)
+# selects the ones in each profile's region.
+sources:
+  - id: devpost-in-person
+    adapter: devpost
+    params:
+      challenge_types: [in-person]
+      statuses: [upcoming, open]
+      pages: 15
+      default_tz: America/Los_Angeles
+      refresh_days: 7
