@@ -199,8 +199,14 @@ def _address(value: Any) -> str | None:
             "addressCountry",
         )
     ]
-    unique = list(dict.fromkeys(p for p in parts if p))
-    return ", ".join(unique) or None
+    # Some publishers put the full address in streetAddress; skip parts
+    # already present as whole words.
+    kept: list[str] = []
+    for part in parts:
+        pattern = rf"\b{re.escape(part)}\b" if part else ""
+        if part and not re.search(pattern, ", ".join(kept), re.IGNORECASE):
+            kept.append(part)
+    return ", ".join(kept) or None
 
 
 def _coordinate(place: dict[str, Any], key: str) -> float | None:

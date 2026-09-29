@@ -196,6 +196,21 @@ def test_unusable_nodes_raise(overrides: dict[str, Any]) -> None:
         event_fields(_node(**overrides), PAGE, LA)
 
 
+def test_address_parts_already_in_street_are_not_repeated() -> None:
+    """A full street address is not followed by its own city again."""
+    location = {
+        "@type": "Place",
+        "address": {
+            "streetAddress": "858 Production Pl, Newport Beach, CA 92663",
+            "addressLocality": "Newport Beach",
+            "addressRegion": "CA",
+            "addressCountry": "US",
+        },
+    }
+    fields = event_fields(_node(location=location), PAGE, LA)
+    assert fields["address"] == "858 Production Pl, Newport Beach, CA 92663, US"
+
+
 def test_slim_event_drops_volatile_fields() -> None:
     """Images and offers are removed; location and organizer are trimmed."""
     slim = slim_event(_node())
