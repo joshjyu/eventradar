@@ -1,0 +1,49 @@
+# Labeled topic decisions against config/topics/<topic>.yaml. `baseline`
+# is the accuracy the rules must keep; raise it when rules improve, never
+# lower it. Add every production misclassification. Titles and
+# descriptions are paraphrased from observed postings.
+version: 1
+topic: tech
+baseline: 1.0
+items:
+  # --- untrusted, all-topic city feeds -----------------------------------
+  - {title: "Coding Assistant Meetup Los Angeles", tech: true}
+  - {title: "Building the Future of Digital Play: AI at a Toy Company", tech: true}
+  - {title: "Artificially Unintelligent Tech Comedy Show", tech: true}
+  - {title: "Robotics Demo Night", tech: true}
+  - {title: "Founders Breakfast", description: "Meet other startup founders and engineers building in software and AI.", tech: true}
+  - {title: "Open Studio + Art Workshop", tech: false}
+  - {title: "Water Summit: Paddle Out for Clean Water", tech: false}
+  - {title: "Grand Opening Launch Party", tech: false}
+  - {title: "Sunday Scones with a Side of Climate Trivia", tech: false}
+  - {title: "Textiles Untangled: Mapping the Future of Textiles", tech: false}
+  - {title: "Native Planting at the Lagoon", tech: false}
+  - {title: "Artists as Entrepreneurs", description: "A panel of co-founders and founders of creative studios.", tech: false}
+  - {title: "Ladies Night + Fireside Chat on Women's Health", description: "Hear from founders and engineers turned wellness coaches.", tech: false}
+  - {title: "The Future of Public Power", tech: false}
+  - {title: "Design Week Opening Party", tech: false}
+  - {title: "Dress Code: Black Tie Gala", tech: false}
+  - {title: "Social Security Benefits Seminar", tech: false}
+  - {title: "Real Estate Investors Meetup", tech: false}
+  - {title: "Rust Belt Photography Exhibit", tech: false}
+  - {title: "Hawaiian Night Luau", tech: false}
+  - {title: "Java Jive Coffee Tasting", tech: false}
+  - {title: "How to React to Change: A Wellness Talk", tech: false}
+  # --- trusted sources (weaker evidence needed) --------------------------
+  - {title: "SDPy Monthly Meetup", description: "Monthly gathering of Python users.", trusted: true, tech: true}
+  - {title: "Burbank Code and Coffee", description: "Bring your laptop and work on coding projects.", trusted: true, tech: true}
+  - {title: "Show & Tell Weekly Meeting", description: "Our hackers share projects.", trusted: true, tech: true}
+  - {title: "Monthly Malware Meetup", trusted: true, tech: true}
+  - {title: "Lunch informal Qt get-together", trusted: true, tech: true}
+  - {title: "Bitcoin Social", trusted: true, tech: true}
+  - {title: "Retrieval vs inference", description: "Talks on AI infrastructure for software engineering teams.", trusted: true, tech: true}
+  - {title: "Boba and iOS", description: "Casual evening for developers writing software for Apple platforms.", trusted: true, tech: true}
+  - {title: "Is There a Cure for Racism? (Free Event)", description: "An open discussion.", trusted: true, tech: false}
+  - {title: "The Arts as Divine Inspiration", description: "Lecture and discussion.", trusted: true, tech: false}
+  - {title: "Referral Networking Breakfast", description: "Business introductions and referrals.", trusted: true, tech: false}
+  - {title: "Mailbox Power Users: Are You Maximizing Your Account?", description: "Tips for customers.", trusted: true, tech: false}
+  - {title: "Starting a Business Podcast", description: "Recording session.", trusted: true, tech: false}
+  # --- hackathon platforms ------------------------------------------------
+  - {title: "Cutie Hack 2026", trusted: true, tech: true}
+  - {title: "OCC Hacks", trusted: true, tech: true}
+  - {title: "Hack Away Hunger: Food Insecurity Challenge", trusted: true, tech: true}
