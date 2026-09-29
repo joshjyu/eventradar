@@ -97,11 +97,14 @@ def is_duplicate(
         return False
     loose = _title_score(ta, tb, loose=True) >= limits.title_with_place
     strict = _title_score(ta, tb, loose=False) >= limits.title_without_place
+    # City centroids say nothing about distance between venues.
     if (
         a.lat is not None
         and a.lon is not None
         and b.lat is not None
         and b.lon is not None
+        and not a.approximate
+        and not b.approximate
     ):
         km = distance_km(a.lat, a.lon, b.lat, b.lon)
         if km <= limits.max_distance_km:

@@ -20,7 +20,8 @@
 - Enrich stage: geocode upcoming in-person events that have an address
   but no coordinates with the Census geocoder, falling back to a packaged
   Census ZIP-centroid table when the address includes a U.S. state and
-  ZIP. Results and misses are cached; misses retry after 30 days; lookups
+  ZIP, then to a packaged Census place (city) centroid table when it ends
+  in a U.S. city and state. Results and misses are cached; misses retry after 30 days; lookups
   per run are capped. Missing time zones come from coordinates (`tzfpy`,
   offline).
 - Resolve stage: events starting within 90 minutes are compared. Within
@@ -28,6 +29,9 @@
   (geocoding noise) or without coordinates, on token-sort similarity
   >= 92. Titles equal after removing spaces always match. Duplicates merge
   into the oldest event; retired ids are kept as aliases.
+- Events placed at a city centroid are compared as if unlocated (the
+  strict title rule, at any distance). A source's own coordinates replace
+  a centroid, and merges keep the more precise location.
 - Field precedence: each source has a `priority`. The leading source's
   values win but never erase known values; others only fill gaps. A
   cancellation reported by any source sticks.

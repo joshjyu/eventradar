@@ -70,5 +70,5 @@ The `eventbrite` adapter reads a personal OAuth token from
 ## Later secrets
 
 Add any future provider key to the same `production` environment, and set
-a usage cap or spend limit on the provider account. Luma, Meetup, and
+a usage cap or spend limit on the provider account. Luma, Meetup, MLH, and
 Devpost need no credentials.

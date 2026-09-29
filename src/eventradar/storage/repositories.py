@@ -36,6 +36,25 @@ _EVENT_COLUMNS = (
 )
 
 
+_LOCATION = ("lat", "lon")
+# Lower is more precise; events without coordinates rank last.
+_PRECISION_RANK = {None: 0, "address": 0, "postal": 1, "place": 2}
+
+
+def _location_rank(row: sqlite3.Row) -> int:
+    """
+    Rank an event's coordinates by precision.
+
+    Parameters:
+      row: Row with `lat` and `geo_precision`.
+    Returns:
+      0 for exact, higher for centroids, 3 when unlocated.
+    """
+    if row["lat"] is None:
+        return 3
+    return _PRECISION_RANK.get(row["geo_precision"], 0)
+
+
 def to_db(value: datetime) -> str:
     """
     Serialize a timezone-aware datetime to a sortable UTC string.
@@ -105,6 +124,8 @@ class ResolveCandidate:
     lat: float | None
     lon: float | None
     url: str | None
+    # Located only to a city centroid, too coarse to compare distances.
+    approximate: bool = False
 
 
 @dataclass(frozen=True)
@@ -655,6 +676,8 @@ class EventRepository:
         sets: list[str] = []
         params: list[Any] = []
         for column, value in values.items():
+            if column in _LOCATION:
+                continue
             if column == "kinds":
                 keep_new = "? != '[]'" if leads else "kinds = '[]'"
                 sets.append(
@@ -674,6 +697,20 @@ class EventRepository:
             else:
                 sets.append(f"{column} = COALESCE({column}, ?)")
                 params.append(value)
+        # A source's own coordinates replace the event's when the source
+        # leads, or when the event has none or only a centroid.
+        replace = (
+            "? IS NOT NULL AND (? OR lat IS NULL "
+            "OR geo_precision IN ('postal', 'place'))"
+        )
+        for column in (*_LOCATION, "geo_precision"):
+            new = "NULL" if column == "geo_precision" else "?"
+            sets.append(
+                f"{column} = CASE WHEN {replace} THEN {new} ELSE {column} END"
+            )
+            params.extend([draft.lat, leads])
+            if column != "geo_precision":
+                params.append(getattr(draft, column))
         if leads:
             sets.append("primary_source = ?")
             params.append(draft.source_id)
@@ -743,7 +780,9 @@ class EventRepository:
         )
         return [(r["event_id"], r["address"]) for r in rows]
 
-    def set_location(self, event_id: str, lat: float, lon: float) -> None:
+    def set_location(
+        self, event_id: str, lat: float, lon: float, precision: str
+    ) -> None:
         """
         Store coordinates found by geocoding.
 
@@ -751,10 +790,12 @@ class EventRepository:
           event_id: Event id.
           lat: Latitude.
           lon: Longitude.
+          precision: `address`, `postal`, or `place`.
         """
         self._conn.execute(
-            "UPDATE events SET lat = ?, lon = ? WHERE event_id = ?",
-            (lat, lon, event_id),
+            "UPDATE events SET lat = ?, lon = ?, geo_precision = ? "
+            "WHERE event_id = ?",
+            (lat, lon, precision, event_id),
         )
 
     def missing_zones(self, now: datetime) -> list[tuple[str, float, float]]:
@@ -795,8 +836,9 @@ class EventRepository:
           Candidates ordered by start time, then id.
         """
         rows = self._conn.execute(
-            "SELECT event_id, title, start_utc, lat, lon, url, status "
-            "FROM events WHERE COALESCE(end_utc, start_utc) >= ? "
+            "SELECT event_id, title, start_utc, lat, lon, url, status, "
+            "geo_precision FROM events "
+            "WHERE COALESCE(end_utc, start_utc) >= ? "
             "ORDER BY start_utc, event_id",
             (to_db(now - timedelta(days=1)),),
         )
@@ -808,6 +850,7 @@ class EventRepository:
                 lat=r["lat"],
                 lon=r["lon"],
                 url=r["url"],
+                approximate=r["geo_precision"] == "place",
             )
             for r in rows
         ]
@@ -838,7 +881,9 @@ class EventRepository:
         loser_leads = self._priority(primaries.get(loser)) > self._priority(
             primaries.get(survivor)
         )
-        columns = [c for c in _EVENT_COLUMNS if c != "kinds"]
+        columns = [
+            c for c in _EVENT_COLUMNS if c != "kinds" and c not in _LOCATION
+        ]
         if not loser_leads:
             columns = [c for c in columns if c not in {"title", "start_utc"}]
         pick = (
@@ -868,6 +913,7 @@ class EventRepository:
                 survivor,
             ),
         )
+        self._merge_location(loser, survivor, loser_leads)
         self._conn.execute(
             "UPDATE event_sources SET event_id = ? WHERE event_id = ?",
             (survivor, loser),
@@ -892,6 +938,34 @@ class EventRepository:
             (loser, survivor, to_db(now)),
         )
         self._conn.execute("DELETE FROM events WHERE event_id = ?", (loser,))
+
+    def _merge_location(
+        self, loser: str, survivor: str, loser_leads: bool
+    ) -> None:
+        """
+        Keep the more precise of two merging events' coordinates.
+
+        Parameters:
+          loser: Event id being retired.
+          survivor: Event id kept.
+          loser_leads: Whether the loser's source has higher priority,
+            which breaks ties.
+        """
+        rows = {
+            r["event_id"]: r
+            for r in self._conn.execute(
+                "SELECT event_id, lat, lon, geo_precision FROM events "
+                "WHERE event_id IN (?, ?)",
+                (loser, survivor),
+            )
+        }
+        order = (loser, survivor) if loser_leads else (survivor, loser)
+        best = min((rows[e] for e in order if e in rows), key=_location_rank)
+        self._conn.execute(
+            "UPDATE events SET lat = ?, lon = ?, geo_precision = ? "
+            "WHERE event_id = ?",
+            (best["lat"], best["lon"], best["geo_precision"], survivor),
+        )
 
     def profile_candidates(
         self, now: datetime, source_ids: Iterable[str]

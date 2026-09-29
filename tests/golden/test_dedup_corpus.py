@@ -21,7 +21,7 @@ def _candidate(event_id: str, fields: dict[str, Any]) -> ResolveCandidate:
 
     Parameters:
       event_id: Id to assign.
-      fields: title, start, and optional lat, lon, url.
+      fields: title, start, and optional lat, lon, url, approximate.
     Returns:
       Candidate.
     """
@@ -32,6 +32,7 @@ def _candidate(event_id: str, fields: dict[str, Any]) -> ResolveCandidate:
         lat=fields.get("lat"),
         lon=fields.get("lon"),
         url=fields.get("url"),
+        approximate=fields.get("approximate", False),
     )
 
 

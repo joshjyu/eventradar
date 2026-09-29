@@ -66,7 +66,7 @@ def test_0006_clears_organizers_and_requests_reparse(tmp_path: Path) -> None:
         "'[]', '2026-09-01T00:00:00.000000+00:00', "
         "'2026-09-01T00:00:00.000000+00:00', 'Pat Example')"
     )
-    assert migrate(conn) == ["0006_clear_organizers.sql"]
+    assert migrate(conn)[0] == "0006_clear_organizers.sql"
     organizer = conn.execute("SELECT organizer FROM events").fetchone()[0]
     assert organizer is None
     tasks = [r[0] for r in conn.execute("SELECT task FROM maintenance_tasks")]

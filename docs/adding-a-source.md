@@ -69,6 +69,7 @@
 |---|---|---|
 | `meetup` | GraphQL `eventSearch` per area x keyword, filtered by topic category | none |
 | `devpost` | Listing API, then each hackathon page's JSON-LD | none |
+| `mlh` | Season pages' embedded page data (current and next season) | none |
 | `eventbrite` | Official API v3, live events per organizer | `EVENTBRITE_TOKEN` |
 
 Meetup's keyword search is a loose semantic match; set

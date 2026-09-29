@@ -8,63 +8,8 @@ from functools import cache
 from importlib.resources import files
 
 from eventradar.geo.geocode.base import GeoPoint
+from eventradar.geo.states import STATE_NAMES
 
-_US_STATES = frozenset(
-    {
-        "AL",
-        "AK",
-        "AZ",
-        "AR",
-        "CA",
-        "CO",
-        "CT",
-        "DE",
-        "DC",
-        "FL",
-        "GA",
-        "HI",
-        "ID",
-        "IL",
-        "IN",
-        "IA",
-        "KS",
-        "KY",
-        "LA",
-        "ME",
-        "MD",
-        "MA",
-        "MI",
-        "MN",
-        "MS",
-        "MO",
-        "MT",
-        "NE",
-        "NV",
-        "NH",
-        "NJ",
-        "NM",
-        "NY",
-        "NC",
-        "ND",
-        "OH",
-        "OK",
-        "OR",
-        "PA",
-        "RI",
-        "SC",
-        "SD",
-        "TN",
-        "TX",
-        "UT",
-        "VT",
-        "VA",
-        "WA",
-        "WV",
-        "WI",
-        "WY",
-        "PR",
-    }
-)
 # "CA 92507" or "California 92507": a state right before the ZIP marks the
 # address as American, so five-digit postal codes elsewhere are ignored.
 _STATE_ZIP = re.compile(r"\b([A-Za-z]{2}|California)\s+(\d{5})(?:-\d{4})?\b")
@@ -96,7 +41,7 @@ def zip_centroid(address: str) -> GeoPoint | None:
       The centroid, or None when no U.S. state + ZIP pair is present.
     """
     for state, code in reversed(_STATE_ZIP.findall(address)):
-        is_state = state.upper() in _US_STATES or state == "California"
+        is_state = state.upper() in STATE_NAMES or state == "California"
         if is_state and code in _table():
             lat, lon = _table()[code]
             return GeoPoint(lat=lat, lon=lon, precision="postal")

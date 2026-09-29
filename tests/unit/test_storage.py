@@ -291,6 +291,37 @@ def test_geocode_cache_and_missing_locations(
     assert [a for _, a in repo.missing_locations(NOW)] == ["1 Main St"]
 
 
+def test_centroid_locations_yield_to_source_coordinates(
+    conn: sqlite3.Connection,
+) -> None:
+    """A city centroid is replaced by any source's coordinates, and merges
+    keep the precise location even when the centroid's source leads."""
+    ids = iter(["E1", "E2", "E3"])
+    repo = EventRepository(
+        conn, id_factory=lambda: next(ids), priorities={"src-hi": 90}
+    )
+    event = repo.upsert_draft(_draft("a", address="Irvine, CA"), "h", NOW)
+    repo.set_location(event.event_id, 33.68, -117.77, "place")
+    [candidate] = repo.resolve_candidates(NOW)
+    assert candidate.approximate
+    repo.upsert_draft(
+        _draft("a", address="Irvine, CA", lat=33.65, lon=-117.84), "h2", NOW
+    )
+    row = conn.execute("SELECT lat, geo_precision FROM events").fetchone()
+    assert (row[0], row[1]) == (33.65, None)
+    hi = repo.upsert_draft(
+        _draft("b", source_id="src-hi", title="Other", address="Irvine, CA"),
+        "h",
+        NOW,
+    )
+    repo.set_location(hi.event_id, 33.68, -117.77, "place")
+    repo.merge(hi.event_id, event.event_id, NOW)
+    row = conn.execute(
+        "SELECT title, lat, geo_precision FROM events"
+    ).fetchone()
+    assert (row[0], row[1], row[2]) == ("Other", 33.65, None)
+
+
 def test_cancellation_from_any_source_sticks(
     conn: sqlite3.Connection,
 ) -> None:

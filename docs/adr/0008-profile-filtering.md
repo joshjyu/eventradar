@@ -41,3 +41,5 @@ After M4, profiles were a hand-picked list of sources. Measured on
 - Events outside the U.S. or with only a city name and no street or ZIP
   stay unlocated and are excluded unless a trusted source vouches for
   them. A city-centroid fallback can be added if that proves costly.
+  (Added with the MLH source, whose venues give only a city: U.S. events
+  with a city and state are now placed at the city's centroid.)

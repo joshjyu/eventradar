@@ -81,6 +81,12 @@ CASES: list[tuple[str, str, dict[str, Any], dict[str, str]]] = [
         },
     ),
     (
+        "mlh",
+        "mlh",
+        {"base_url": "https://mlh.example.test", "seasons_ahead": 0},
+        {"https://mlh.example.test/seasons/2027/events": "mlh/season.html"},
+    ),
+    (
         "jsonld-links",
         "jsonld",
         {

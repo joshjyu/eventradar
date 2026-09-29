@@ -5,7 +5,7 @@ from typing import Literal, Protocol
 
 from eventradar.http import HttpClient
 
-type Precision = Literal["address", "postal"]
+type Precision = Literal["address", "postal", "place"]
 
 
 @dataclass(frozen=True)
