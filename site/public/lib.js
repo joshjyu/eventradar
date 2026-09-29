@@ -13,7 +13,16 @@ const PLATFORMS = [
   ["eventbrite-", "Eventbrite"],
   ["site-", "Event website"],
 ];
-const STATE_PART = /^([A-Z]{2}|California)( \d{5}(-\d{4})?)?$/;
+// A state, optionally followed by a ZIP; platforms differ in case
+// ("CA 92663", "ca", "California").
+const STATE_PART = /^([a-z]{2}|california)(\s+\d{5}(-\d{4})?)?$/i;
+const STATES = new Set(
+  (
+    "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI " +
+    "MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT " +
+    "VA WA WV WI WY PR CALIFORNIA"
+  ).split(" "),
+);
 
 /**
  * Pick the zone an event is local to.
@@ -100,7 +109,10 @@ export function timeRange(event) {
 export function cityOf(address) {
   if (!address) return "";
   const parts = address.split(",").map((p) => p.trim());
-  const state = parts.findIndex((p) => STATE_PART.test(p));
+  const state = parts.findIndex((p) => {
+    const match = STATE_PART.exec(p);
+    return match !== null && STATES.has(match[1].toUpperCase());
+  });
   return state > 0 ? parts[state - 1] : "";
 }
 

@@ -54,6 +54,10 @@ test("city and place labels", () => {
   assert.equal(cityOf("858 Production Pl, Newport Beach, CA 92663, US"), "Newport Beach");
   assert.equal(cityOf("Irvine, California"), "Irvine");
   assert.equal(cityOf("Somewhere"), "");
+  assert.equal(cityOf("2522 N Ontario St, Burbank, ca, 91504, us"), "Burbank");
+  assert.equal(cityOf("Los Angeles, California, US"), "Los Angeles");
+  assert.equal(cityOf("Toronto, Ontario, Canada"), "");
+  assert.equal(cityOf("Somewhere, US"), "");
   assert.equal(
     placeLabel(event({ venue: "Hall", address: "1 Main St, Pasadena, CA" })),
     "Hall · Pasadena",
