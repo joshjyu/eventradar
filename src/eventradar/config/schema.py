@@ -5,6 +5,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from eventradar.domain.enums import EventKind
+
 type ConfigId = Annotated[
     str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
 ]
@@ -101,6 +103,15 @@ class SourceFile(_Strict):
     sources: list[SourceConfig]
 
 
+class ProfileTrust(_Strict):
+    """Sources whose events skip a filter because they are curated."""
+
+    # Unlocated events from these sources count as in the region.
+    region: list[ConfigId] = Field(default_factory=list)
+    # Events from these sources need weaker keyword evidence for the topic.
+    topic: list[ConfigId] = Field(default_factory=list)
+
+
 class ProfileConfig(_Strict):
     """A published view: region x topic, optionally scoped to sources."""
 
@@ -110,6 +121,8 @@ class ProfileConfig(_Strict):
     region: ConfigId
     topic: ConfigId
     sources: list[ConfigId] | Literal["all"] = "all"
+    trust: ProfileTrust = ProfileTrust()
+    include_online: bool = False
     queries: list[str] = Field(default_factory=list)
 
 
@@ -119,8 +132,21 @@ class TopicConfig(_Strict):
     version: Literal[1]
     id: ConfigId
     name: str
+    # Phrases matched case-insensitively on word boundaries.
     keywords: list[str] = Field(default_factory=list)
+    # A title containing any of these is never on the topic.
     exclude_keywords: list[str] = Field(default_factory=list)
+    # Distinct keywords a description needs when the title has none.
+    description_min_matches: int = Field(default=3, ge=1)
+    # The same, for events from sources a profile trusts for the topic.
+    trusted_description_min_matches: int = Field(default=1, ge=1)
+
+
+class KindRules(_Strict):
+    """Title phrases that mark event kinds (`config/kinds.yaml`)."""
+
+    version: Literal[1]
+    kinds: dict[EventKind, list[str]] = Field(default_factory=dict)
 
 
 class ConfigBundle(_Strict):
@@ -132,6 +158,7 @@ class ConfigBundle(_Strict):
     profiles: dict[str, ProfileConfig]
     topics: dict[str, TopicConfig]
     regions: dict[str, Path]
+    kinds: KindRules = KindRules(version=1)
 
     def enabled_sources(self) -> list[SourceConfig]:
         """
