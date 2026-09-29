@@ -16,6 +16,7 @@ const PLATFORMS = [
 // A state, optionally followed by a ZIP; platforms differ in case
 // ("CA 92663", "ca", "California").
 const STATE_PART = /^([a-z]{2}|california)(\s+\d{5}(-\d{4})?)?$/i;
+const COUNTRY = /^(us|usa|u\.s\.a?\.?|united states)$/i;
 const STATES = new Set(
   (
     "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI " +
@@ -66,6 +67,19 @@ export function dayHeading(day) {
 }
 
 /**
+ * Whether an event ends on a later local day than it starts.
+ *
+ * @param {object} event Published event.
+ * @returns {boolean} True for multi-day events.
+ */
+function spansDays(event) {
+  return (
+    Boolean(event.end_utc) &&
+    localDay({ ...event, start_utc: event.end_utc }) !== localDay(event)
+  );
+}
+
+/**
  * Format the event's time span in its own zone.
  *
  * Same-day events show times; multi-day events show dates.
@@ -77,7 +91,7 @@ export function timeRange(event) {
   const timeZone = zoneOf(event);
   const start = new Date(event.start_utc);
   const end = event.end_utc ? new Date(event.end_utc) : null;
-  if (end && localDay({ ...event, start_utc: event.end_utc }) !== localDay(event)) {
+  if (end && spansDays(event)) {
     const date = new Intl.DateTimeFormat("en-US", {
       timeZone,
       month: "short",
@@ -109,11 +123,21 @@ export function timeRange(event) {
 export function cityOf(address) {
   if (!address) return "";
   const parts = address.split(",").map((p) => p.trim());
-  const state = parts.findIndex((p) => {
+  const isState = (p) => {
     const match = STATE_PART.exec(p);
     return match !== null && STATES.has(match[1].toUpperCase());
-  });
-  return state > 0 ? parts[state - 1] : "";
+  };
+  const isFiller = (p) => isState(p) || COUNTRY.test(p) || /^\d{5}/.test(p);
+  // The last "City, ST" pair wins: platforms may repeat a messy street
+  // line first ("832 S Olive St Los Angeles, Ca 90014, Los Angeles, CA,
+  // 90014, us") or append the state again after the country ("Costa
+  // Mesa, CA 92626, USA, California").
+  for (let i = parts.length - 1; i > 0; i--) {
+    if (isState(parts[i]) && parts[i - 1] && !isFiller(parts[i - 1])) {
+      return parts[i - 1];
+    }
+  }
+  return "";
 }
 
 /**
@@ -125,7 +149,7 @@ export function cityOf(address) {
 export function placeLabel(event) {
   if (event.attendance_mode === "online") return "Online";
   const city = cityOf(event.address);
-  const parts = [event.venue, city].filter(Boolean);
+  const parts = [event.venue, city || event.area].filter(Boolean);
   if (parts.length) return [...new Set(parts)].join(" · ");
   return event.address ? event.address.split(",")[0] : "";
 }
@@ -176,22 +200,6 @@ export function filterEvents(events, filters, now) {
       .toLowerCase();
     return words.every((w) => text.includes(w));
   });
-}
-
-/**
- * Group events by local day, preserving order.
- *
- * @param {object[]} events Events sorted by start time.
- * @returns {Array<[string, object[]]>} Day and its events.
- */
-export function groupByDay(events) {
-  const groups = new Map();
-  for (const event of events) {
-    const day = localDay(event);
-    if (!groups.has(day)) groups.set(day, []);
-    groups.get(day).push(event);
-  }
-  return [...groups];
 }
 
 export const PAGE_SIZES = [10, 25, 50];
@@ -245,4 +253,125 @@ export function summaryText(view, matched, total) {
   return view.pages > 1
     ? `Showing ${range} of ${matched} matching events (${total} upcoming)`
     : `${matched} of ${total} upcoming events`;
+}
+
+export const SORTS = ["date", "city", "source"];
+const ONLINE = "Online";
+const UNLISTED = "Location not listed";
+
+/**
+ * Read a sort order from a control or query value.
+ *
+ * @param {string | null} value `date`, `city`, or `source`.
+ * @returns {string} The sort; `date` when unknown.
+ */
+export function sortOrder(value) {
+  return SORTS.includes(value) ? value : "date";
+}
+
+/**
+ * The city an event is in, for grouping; the region's area (e.g. a
+ * county) when the address names no city.
+ *
+ * @param {object} event Published event.
+ * @returns {string} City, area, "Online", or "Location not listed".
+ */
+export function areaOf(event) {
+  if (event.attendance_mode === "online") return ONLINE;
+  return cityOf(event.address) || event.area || UNLISTED;
+}
+
+/**
+ * The platform an event is grouped under: the first it was found on.
+ *
+ * @param {object} event Published event.
+ * @returns {string} Platform name.
+ */
+export function platformOf(event) {
+  return platforms(event)[0] || "Other";
+}
+
+/**
+ * Group key and heading for an event under a sort order.
+ *
+ * @param {object} event Published event.
+ * @param {string} sort `date`, `city`, or `source`.
+ * @returns {string} Heading text; events with equal headings group.
+ */
+function headingOf(event, sort) {
+  if (sort === "city") return areaOf(event);
+  if (sort === "source") return platformOf(event);
+  return dayHeading(localDay(event));
+}
+
+/**
+ * Compare two group headings: alphabetical, catch-all groups last.
+ *
+ * @param {string} a Heading.
+ * @param {string} b Heading.
+ * @returns {number} Sort comparison.
+ */
+function compareHeadings(a, b) {
+  const rank = (h) => (h === UNLISTED ? 2 : h === ONLINE ? 1 : 0);
+  return rank(a) - rank(b) || a.localeCompare(b, "en", { sensitivity: "base" });
+}
+
+/**
+ * Order events for display. Date order is the feed's own; city and source
+ * orders are alphabetical by group, then by start time within a group.
+ *
+ * @param {object[]} events Events sorted by start time.
+ * @param {string} sort `date`, `city`, or `source`.
+ * @returns {object[]} A new, ordered array.
+ */
+export function sortEvents(events, sort) {
+  if (sort === "date") return [...events];
+  // Array.prototype.sort is stable, so start-time order survives in groups.
+  return [...events].sort((a, b) =>
+    compareHeadings(headingOf(a, sort), headingOf(b, sort)),
+  );
+}
+
+/**
+ * Group consecutive events under headings for a sort order.
+ *
+ * City headings compare case-insensitively ("Irvine" and "irvine" group
+ * together, shown as first written).
+ *
+ * @param {object[]} events Events already ordered by `sortEvents`.
+ * @param {string} sort `date`, `city`, or `source`.
+ * @returns {Array<[string, object[]]>} Heading and its events.
+ */
+export function groupEvents(events, sort) {
+  const groups = [];
+  for (const event of events) {
+    const heading = headingOf(event, sort);
+    const last = groups[groups.length - 1];
+    if (last && compareHeadings(last[0], heading) === 0) {
+      last[1].push(event);
+    } else {
+      groups.push([heading, [event]]);
+    }
+  }
+  return groups;
+}
+
+/**
+ * When an event happens, with its day when the heading does not say it.
+ *
+ * @param {object} event Published event.
+ * @param {boolean} withDay Prefix a short date to same-day events.
+ * @returns {string} e.g. "Tue, Oct 13 · 6:00 PM – 9:00 PM PDT".
+ */
+export function whenLabel(event, withDay) {
+  const range = timeRange(event);
+  if (!withDay || spansDays(event)) return range;
+  const [y, m, d] = localDay(event).split("-").map(Number);
+  const day = new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(Date.UTC(y, m - 1, d)));
+  return `${day} · ${range}`;
 }
