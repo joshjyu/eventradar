@@ -25,3 +25,6 @@ title rules from `config/kinds.yaml`; it may be empty.
 Profile membership: an event is in a profile when it is in the region
 (by coordinates, or from a region-trusted source), not online unless the
 profile includes online events, and on the topic (see ADR 0008).
+
+`organizer` is the organizing organization when a source names one; it is
+never a person (ADR 0011).
