@@ -5,6 +5,7 @@ version: 1
 sources:
   - id: devpost-in-person
     adapter: devpost
+    priority: 60
     params:
       challenge_types: [in-person]
       statuses: [upcoming, open]
