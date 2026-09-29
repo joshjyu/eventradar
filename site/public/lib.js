@@ -9,6 +9,7 @@ const PLATFORMS = [
   ["luma-", "Luma"],
   ["meetup-", "Meetup"],
   ["devpost-", "Devpost"],
+  ["mlh-", "MLH"],
   ["eventbrite-", "Eventbrite"],
   ["site-", "Event website"],
 ];
@@ -179,4 +180,57 @@ export function groupByDay(events) {
     groups.get(day).push(event);
   }
   return [...groups];
+}
+
+export const PAGE_SIZES = [10, 25, 50];
+export const DEFAULT_PAGE_SIZE = 25;
+
+/**
+ * Read a page size from a control or query value.
+ *
+ * @param {string | null} value `10`, `25`, `50`, or `all`.
+ * @returns {number} Events per page; 0 means all.
+ */
+export function pageSize(value) {
+  if (value === "all") return 0;
+  const size = Number(value);
+  return PAGE_SIZES.includes(size) ? size : DEFAULT_PAGE_SIZE;
+}
+
+/**
+ * Cut one page out of a list.
+ *
+ * @param {object[]} items Items to page through.
+ * @param {number} size Items per page; 0 means all on one page.
+ * @param {number} page Requested page, 1-based; clamped to the valid range.
+ * @returns {{items: object[], page: number, pages: number, start: number,
+ *   end: number}} The page's items, its number, the page count, and the
+ *   0-based start and exclusive end within `items`.
+ */
+export function paginate(items, size, page) {
+  const pages = size ? Math.max(1, Math.ceil(items.length / size)) : 1;
+  const current = Math.min(Math.max(1, Math.trunc(page) || 1), pages);
+  const start = size ? (current - 1) * size : 0;
+  const end = size ? Math.min(start + size, items.length) : items.length;
+  return { items: items.slice(start, end), page: current, pages, start, end };
+}
+
+/**
+ * Describe what the list is showing.
+ *
+ * @param {{start: number, end: number, pages: number}} view Current page.
+ * @param {number} matched Events matching the filters.
+ * @param {number} total All upcoming events.
+ * @returns {string} Summary line.
+ */
+export function summaryText(view, matched, total) {
+  const range = `${view.start + 1}–${view.end}`;
+  if (matched === total) {
+    return view.pages > 1
+      ? `Showing ${range} of ${total} upcoming events`
+      : `${total} upcoming events`;
+  }
+  return view.pages > 1
+    ? `Showing ${range} of ${matched} matching events (${total} upcoming)`
+    : `${matched} of ${total} upcoming events`;
 }

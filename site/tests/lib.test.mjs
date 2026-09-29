@@ -3,13 +3,17 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  DEFAULT_PAGE_SIZE,
   cityOf,
   dayHeading,
   filterEvents,
   groupByDay,
   localDay,
+  pageSize,
+  paginate,
   placeLabel,
   platforms,
+  summaryText,
   timeRange,
 } from "../public/lib.js";
 
@@ -63,9 +67,10 @@ test("platform names are deduplicated", () => {
       { source_id: "luma-la-tech-week" },
       { source_id: "luma-la-city" },
       { source_id: "meetup-socal-tech" },
+      { source_id: "mlh-hackathons" },
     ],
   });
-  assert.deepEqual(platforms(e), ["Luma", "Meetup"]);
+  assert.deepEqual(platforms(e), ["Luma", "Meetup", "MLH"]);
 });
 
 test("filters combine search, kind, and recency", () => {
@@ -93,4 +98,39 @@ test("grouping keeps order within days", () => {
       ["2026-10-16", ["C"]],
     ],
   );
+});
+
+test("pageSize accepts only offered sizes", () => {
+  assert.equal(pageSize("10"), 10);
+  assert.equal(pageSize("50"), 50);
+  assert.equal(pageSize("all"), 0);
+  assert.equal(pageSize("7"), DEFAULT_PAGE_SIZE);
+  assert.equal(pageSize(null), DEFAULT_PAGE_SIZE);
+});
+
+test("paginate slices and clamps pages", () => {
+  const items = Array.from({ length: 23 }, (_, i) => i);
+  const third = paginate(items, 10, 3);
+  assert.deepEqual(third.items, [20, 21, 22]);
+  assert.deepEqual([third.page, third.pages, third.start, third.end], [3, 3, 20, 23]);
+  assert.equal(paginate(items, 10, 99).page, 3);
+  assert.equal(paginate(items, 10, 0).page, 1);
+  assert.equal(paginate(items, 10, Number.NaN).page, 1);
+  const all = paginate(items, 0, 2);
+  assert.deepEqual([all.items.length, all.page, all.pages], [23, 1, 1]);
+  assert.deepEqual(paginate([], 10, 1).pages, 1);
+});
+
+test("summaryText mentions the range only when paging", () => {
+  const items = Array.from({ length: 40 }, (_, i) => i);
+  assert.equal(
+    summaryText(paginate(items, 25, 2), 40, 40),
+    "Showing 26–40 of 40 upcoming events",
+  );
+  assert.equal(
+    summaryText(paginate(items, 10, 1), 40, 169),
+    "Showing 1–10 of 40 matching events (169 upcoming)",
+  );
+  assert.equal(summaryText(paginate(items, 0, 1), 40, 40), "40 upcoming events");
+  assert.equal(summaryText(paginate(items, 50, 1), 40, 169), "40 of 169 upcoming events");
 });

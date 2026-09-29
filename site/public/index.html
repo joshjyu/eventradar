@@ -54,12 +54,26 @@
           <input id="new-only" type="checkbox" />
           New this week
         </label>
+        <label class="per-page">
+          Show
+          <select id="per-page">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="all">All</option>
+          </select>
+        </label>
       </section>
 
       <p id="summary" class="summary" aria-live="polite"></p>
       <div id="events" class="events">
         <noscript><p class="empty">This page needs JavaScript. The raw feed is at /v1/socal-tech/events.json.</p></noscript>
       </div>
+      <nav id="pager" class="pager" aria-label="Pages" hidden>
+        <button type="button" id="prev-page">← Previous</button>
+        <span id="page-info" aria-live="polite"></span>
+        <button type="button" id="next-page">Next →</button>
+      </nav>
 
       <section class="panel" aria-labelledby="subscribe-heading">
         <h2 id="subscribe-heading">Subscribe</h2>
@@ -75,8 +89,8 @@
         <h2 id="about-heading">How it works</h2>
         <p>
           A scheduled job reads structured, public event data: Luma and
-          community calendars (iCalendar), Meetup's and Devpost's APIs, and
-          schema.org markup on event pages. It never scrapes page layouts,
+          community calendars (iCalendar), Meetup's API, MLH's hackathon
+          listings, and schema.org markup on event pages. It never scrapes page layouts,
           and it honors every site's robots.txt.
         </p>
         <p>
