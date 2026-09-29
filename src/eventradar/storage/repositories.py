@@ -237,6 +237,26 @@ class RawRecordRepository:
         )
         return True
 
+    def prune(self, before: datetime) -> int:
+        """
+        Delete superseded versions fetched before a cutoff.
+
+        The latest version of every record is always kept, so `replay`
+        still has everything it needs.
+
+        Parameters:
+          before: Versions fetched earlier than this may be deleted.
+        Returns:
+          Number of rows deleted.
+        """
+        cur = self._conn.execute(
+            "DELETE FROM raw_records AS r WHERE fetched_at < ? "
+            "AND fetched_at < (SELECT MAX(fetched_at) FROM raw_records x "
+            "WHERE x.source_id = r.source_id AND x.native_id = r.native_id)",
+            (to_db(before),),
+        )
+        return cur.rowcount
+
     def latest_one(self, source_id: str, native_id: str) -> RawRecord | None:
         """
         Return the most recent payload for one source record.

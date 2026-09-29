@@ -47,6 +47,7 @@ class RunSettings(_Strict):
 
     lock_ttl_s: int = Field(default=3600, ge=60)
     snapshot_retention: int = Field(default=14, ge=1)
+    raw_history_days: int = Field(default=30, ge=1)
 
 
 class Settings(_Strict):
