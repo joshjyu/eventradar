@@ -193,3 +193,35 @@ def test_params_reject_bad_config() -> None:
         _source(url_pattern="(")
     with pytest.raises(ValueError, match="unknown time zone"):
         _source(default_tz="Nowhere/Land")
+
+
+@respx.mock
+async def test_signals_update_without_refetch() -> None:
+    """Changed counters refresh the stored record but not the page."""
+    from zoneinfo import ZoneInfo
+
+    from eventradar.sources.protocols.jsonld_pages import PageHarvester
+
+    routes = _mock_site()
+    url = f"{EV}/robotics-day-101"
+    pages = PageHarvester("test-jsonld", ZoneInfo("UTC"), refresh_days=60)
+    settings = HttpSettings(
+        user_agent="test", per_host_min_interval_s=0, respect_robots=False
+    )
+    async with HttpClient(settings) as http:
+        first_ctx = SourceContext(http=http, now=NOW)
+        first = await pages.record(url, None, first_ctx, {"n": 1})
+        assert first is not None
+        later = NOW.replace(day=29)
+        if refresh_due(url, later.date(), 60):
+            pytest.skip("url happens to be due on the test date")
+        ctx = SourceContext(
+            http=http, now=later, previous=lambda _sid, _nid: first
+        )
+        same = await pages.record(url, None, ctx, {"n": 1})
+        bumped = await pages.record(url, None, ctx, {"n": 2})
+    assert same is first
+    assert bumped is not None
+    assert bumped.payload["signals"] == {"n": 2}
+    assert bumped.payload["events"] == first.payload["events"]
+    assert routes[url].call_count == 1
