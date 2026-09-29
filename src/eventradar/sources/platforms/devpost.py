@@ -6,7 +6,6 @@ Registration counts are stored as signals, so their daily changes update
 the size signal without refetching pages.
 """
 
-import asyncio
 import logging
 from typing import Any
 from urllib.parse import urlencode
@@ -21,7 +20,10 @@ from eventradar.domain.models import EventDraft, RawRecord
 from eventradar.domain.urls import canonical_url
 from eventradar.http import HttpError
 from eventradar.sources.base import SourceContext
-from eventradar.sources.protocols.jsonld_pages import PageHarvester
+from eventradar.sources.protocols.jsonld_pages import (
+    PageHarvester,
+    PageRequest,
+)
 
 log = logging.getLogger(__name__)
 
@@ -75,18 +77,17 @@ class DevpostSource:
           One raw record per hackathon page.
         """
         listed = await self._list(ctx)
-        results = await asyncio.gather(
-            *(
-                self._pages.record(
+        return await self._pages.harvest(
+            [
+                PageRequest(
                     canonical_url(item["url"]),
                     {k: item.get(k) for k in _LISTING_KEYS},
-                    ctx,
                     {"registrations": item.get("registrations_count")},
                 )
                 for item in listed
-            )
+            ],
+            ctx,
         )
-        return [r for r in results if r is not None]
 
     async def _list(self, ctx: SourceContext) -> list[dict[str, Any]]:
         """

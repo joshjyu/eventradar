@@ -87,7 +87,10 @@ async def _fetch(
       Fetched records.
     """
     settings = HttpSettings(
-        user_agent="test", per_host_min_interval_s=0, respect_robots=False
+        user_agent="test",
+        per_host_min_interval_s=0,
+        respect_robots=False,
+        max_retries=0,
     )
     async with HttpClient(settings) as http:
         ctx = SourceContext(http=http, now=NOW, previous=previous)
@@ -139,3 +142,28 @@ async def test_registration_changes_do_not_refetch_pages() -> None:
         r.native_id: r.payload["signals"]["registrations"] for r in second
     }
     assert counts["https://alpha-hack.devpost.example.test/"] == 120
+
+
+@respx.mock
+async def test_blocked_pages_fail_the_source() -> None:
+    """If every page fetch is a bot challenge, the source reports it."""
+    import pytest
+
+    from eventradar.http import HttpError
+
+    routes = mock_devpost()
+    for url in PAGES:
+        routes[url].mock(return_value=httpx.Response(202, text="<html>"))
+    with pytest.raises(HttpError, match="all 3 event page fetches failed"):
+        await _fetch(_source())
+
+
+@respx.mock
+async def test_one_failed_page_does_not_fail_the_source() -> None:
+    """Isolated page failures are tolerated."""
+    routes = mock_devpost()
+    first = next(iter(PAGES))
+    routes[first].mock(return_value=httpx.Response(500))
+    records = await _fetch(_source())
+    assert first not in {r.native_id for r in records}
+    assert len(records) == len(PAGES) - 1
