@@ -448,6 +448,26 @@ class RawRecordRepository:
         )
         return cur.rowcount
 
+    def for_run(
+        self, source_id: str, run_id: str, limit: int
+    ) -> list[RawRecord]:
+        """
+        Sample the records a run stored for a source.
+
+        Parameters:
+          source_id: Source id.
+          run_id: Run id.
+          limit: Maximum records.
+        Returns:
+          Records, by native id.
+        """
+        rows = self._conn.execute(
+            "SELECT * FROM raw_records WHERE source_id = ? AND run_id = ? "
+            "ORDER BY native_id LIMIT ?",
+            (source_id, run_id, limit),
+        )
+        return [_row_to_raw(r) for r in rows]
+
     def latest_one(self, source_id: str, native_id: str) -> RawRecord | None:
         """
         Return the most recent payload for one source record.
