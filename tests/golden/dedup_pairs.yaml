@@ -1,0 +1,141 @@
+# Labeled pairs for duplicate detection. Add every production false merge
+# or missed duplicate here. Titles are paraphrased from observed postings.
+version: 1
+floors:
+  precision: 0.98
+  recall: 0.90
+pairs:
+  # --- same event -------------------------------------------------------
+  - note: cross-posted by two groups, date suffix on one title
+    same: true
+    a: {title: "SoCal Celebrates Entrepreneurship 10/24/26", start: "2026-10-24T16:00:00Z", lat: 33.6846, lon: -117.8265}
+    b: {title: "SoCal Celebrates Entrepreneurship", start: "2026-10-24T16:00:00Z", lat: 33.6846, lon: -117.8265}
+  - note: hashtag suffix, same venue
+    same: true
+    a: {title: "Beyond Founder-Led Sales #LATechWeek", start: "2026-10-13T17:00:00Z", lat: 34.0195, lon: -118.4912}
+    b: {title: "Beyond Founder-Led Sales", start: "2026-10-13T17:00:00Z", lat: 34.0196, lon: -118.4910}
+  - note: calendar vs meetup wording, venue coords 150 m apart
+    same: true
+    a: {title: "LA Agentic AI Meetup hosted by Pinecone: LA Tech Week Edition", start: "2026-10-14T00:00:00Z", lat: 34.0407, lon: -118.2468}
+    b: {title: "LA Agentic AI Meetup - Pinecone - LA Tech Week", start: "2026-10-14T00:30:00Z", lat: 34.0418, lon: -118.2459}
+  - note: extra venue detail in one title
+    same: true
+    a: {title: "LA Social & Tech Meetup | Santa Monica", start: "2026-10-03T02:00:00Z", lat: 34.0256, lon: -118.4960}
+    b: {title: "LA Social and Tech Meetup", start: "2026-10-03T02:00:00Z", lat: 34.0256, lon: -118.4960}
+  - note: year in one title only
+    same: true
+    a: {title: "Cutie Hack 2026", start: "2026-11-21T16:00:00Z", lat: 33.9737, lon: -117.3281}
+    b: {title: "Cutie Hack", start: "2026-11-21T16:00:00Z", lat: 33.9912, lon: -117.3068}
+  - note: spacing differs between postings
+    same: true
+    a: {title: "OCC Hacks", start: "2026-10-10T16:00:00Z", lat: 33.6695, lon: -117.9120}
+    b: {title: "OCCHacks", start: "2026-10-10T16:00:00Z", lat: 33.6697, lon: -117.9118}
+  - note: same page URL on both
+    same: true
+    a: {title: "AI Demo Night", start: "2026-10-15T01:00:00Z", url: "https://events.example.test/e/1"}
+    b: {title: "AI Demo Night (Irvine)", start: "2026-10-15T01:00:00Z", url: "https://events.example.test/e/1"}
+  - note: start differs by an hour (door time vs talk time)
+    same: true
+    a: {title: "Rust LA October: AI and Rust", start: "2026-10-14T01:00:00Z", lat: 34.0522, lon: -118.2437}
+    b: {title: "Rust LA October - AI & Rust", start: "2026-10-14T02:00:00Z", lat: 34.0522, lon: -118.2437}
+  - note: unlocated, near-identical titles
+    same: true
+    a: {title: "Pasadena Tech Happy Hour", start: "2026-10-16T01:00:00Z"}
+    b: {title: "Pasadena Tech Happy Hour!", start: "2026-10-16T01:00:00Z"}
+  - note: emoji decoration
+    same: true
+    a: {title: "⚡ Vibe Coding Camp: Build Fast", start: "2026-10-15T17:00:00Z", lat: 34.0301, lon: -118.4731}
+    b: {title: "Vibe Coding Camp - Build Fast", start: "2026-10-15T17:00:00Z", lat: 34.0301, lon: -118.4731}
+  - note: word order swapped
+    same: true
+    a: {title: "Founders and Investors Dinner LA", start: "2026-10-15T02:00:00Z", lat: 34.0736, lon: -118.4004}
+    b: {title: "LA Founders and Investors Dinner", start: "2026-10-15T02:00:00Z", lat: 34.0736, lon: -118.4004}
+  - note: series suffix only on one title
+    same: true
+    a: {title: "Orange County AI Meetup", start: "2026-10-22T01:30:00Z", lat: 33.6846, lon: -117.8265}
+    b: {title: "Orange County AI Meetup October", start: "2026-10-22T01:30:00Z", lat: 33.6846, lon: -117.8265}
+  - note: unlocated, punctuation only
+    same: true
+    a: {title: "Hack-a-thon: Climate Tech", start: "2026-11-07T16:00:00Z"}
+    b: {title: "Hackathon: Climate Tech", start: "2026-11-07T16:00:00Z"}
+  - note: host name appended
+    same: true
+    a: {title: "Kernel Panic Linux Meeting", start: "2026-10-07T02:00:00Z", lat: 32.8328, lon: -117.1466}
+    b: {title: "Kernel Panic Linux Meeting at AleSmith", start: "2026-10-07T02:00:00Z", lat: 32.8330, lon: -117.1462}
+  - note: capitalization and ampersand
+    same: true
+    a: {title: "DATA SCIENCE & ML NIGHT", start: "2026-10-20T01:00:00Z", lat: 32.7157, lon: -117.1611}
+    b: {title: "Data Science and ML Night", start: "2026-10-20T01:00:00Z", lat: 32.7157, lon: -117.1611}
+  - note: identical title and time, 1.5 km apart (geocoding noise)
+    same: true
+    a: {title: "Cyber Security Meetup", start: "2026-10-14T01:00:00Z", lat: 32.7157, lon: -117.1611}
+    b: {title: "Cyber Security Meetup", start: "2026-10-14T01:00:00Z", lat: 32.7290, lon: -117.1611}
+  - note: address geocode vs ZIP centroid (3.6 km), strict title match
+    same: true
+    a: {title: "Hyphen Hacks", start: "2026-10-10T16:00:00Z", lat: 33.6405, lon: -117.8443}
+    b: {title: "Hyphen-Hacks", start: "2026-10-10T16:00:00Z", lat: 33.6731, lon: -117.8340}
+  # --- different events -------------------------------------------------
+  - note: similar titles 3 km apart, same evening
+    same: false
+    a: {title: "AI Builders Meetup", start: "2026-10-09T01:00:00Z", lat: 33.6846, lon: -117.8265}
+    b: {title: "AI Founders Meetup", start: "2026-10-09T01:00:00Z", lat: 33.7116, lon: -117.8265}
+  - note: weekly series, different days
+    same: false
+    a: {title: "CRASH Space Show & Tell", start: "2026-10-01T03:00:00Z", lat: 33.9868, lon: -118.4696}
+    b: {title: "CRASH Space Show & Tell", start: "2026-10-08T03:00:00Z", lat: 33.9868, lon: -118.4696}
+  - note: same venue and day, morning vs evening session
+    same: false
+    a: {title: "Python Tooling Workshop", start: "2026-10-16T16:00:00Z", lat: 33.8704, lon: -117.9243}
+    b: {title: "Python Tooling Workshop", start: "2026-10-17T01:00:00Z", lat: 33.8704, lon: -117.9243}
+  - note: same time, different cities
+    same: false
+    a: {title: "Python Tooling Hands-on Workshop", start: "2026-10-23T01:00:00Z", lat: 33.8704, lon: -117.9243}
+    b: {title: "Python Tooling Hands-on Workshop", start: "2026-10-23T01:00:00Z", lat: 33.7743, lon: -117.9380}
+  - note: same venue and time, different activities
+    same: false
+    a: {title: "Coding Social", start: "2026-10-05T02:00:00Z", lat: 33.9868, lon: -118.4696}
+    b: {title: "Circuits Social", start: "2026-10-05T02:00:00Z", lat: 33.9868, lon: -118.4696}
+  - note: generic title, different cities
+    same: false
+    a: {title: "Tech Happy Hour", start: "2026-10-15T01:00:00Z", lat: 34.1478, lon: -118.1445}
+    b: {title: "Tech Happy Hour", start: "2026-10-15T01:00:00Z", lat: 32.7157, lon: -117.1611}
+  - note: unlocated generic titles
+    same: false
+    a: {title: "AI Meetup", start: "2026-10-09T01:00:00Z"}
+    b: {title: "AI Meetup: Agents in Production", start: "2026-10-09T01:00:00Z"}
+  - note: same organizer, parallel tracks at one venue
+    same: false
+    a: {title: "Beginner Python Track", start: "2026-10-18T17:00:00Z", lat: 34.0689, lon: -118.4452}
+    b: {title: "Advanced Rust Track", start: "2026-10-18T17:00:00Z", lat: 34.0689, lon: -118.4452}
+  - note: numbered editions of a series on one night
+    same: false
+    a: {title: "Startup Pitch Night 12", start: "2026-10-21T01:00:00Z", lat: 34.0522, lon: -118.2437}
+    b: {title: "Investor Office Hours", start: "2026-10-21T01:00:00Z", lat: 34.0522, lon: -118.2437}
+  - note: hackathon vs its kickoff mixer the week before
+    same: false
+    a: {title: "Hack Away Hunger", start: "2026-11-07T16:00:00Z", lat: 32.8801, lon: -117.2340}
+    b: {title: "Hack Away Hunger Kickoff Mixer", start: "2026-10-31T01:00:00Z", lat: 32.8801, lon: -117.2340}
+  - note: similar names, different communities, same evening, 12 km apart
+    same: false
+    a: {title: "San Diego AI Happy Hour", start: "2026-10-09T01:00:00Z", lat: 32.7157, lon: -117.1611}
+    b: {title: "San Diego AI Happy Hour", start: "2026-10-09T01:00:00Z", lat: 32.8328, lon: -117.1466}
+  - note: unlocated, one extra meaningful word
+    same: false
+    a: {title: "Intro to Machine Learning", start: "2026-10-12T17:00:00Z"}
+    b: {title: "Intro to Machine Learning Ethics", start: "2026-10-12T17:00:00Z"}
+  - note: two-hour gap at one venue
+    same: false
+    a: {title: "Makers Night", start: "2026-10-10T01:00:00Z", lat: 32.7338, lon: -117.1547}
+    b: {title: "Makers Night", start: "2026-10-10T03:30:00Z", lat: 32.7338, lon: -117.1547}
+  - note: identical title and time, 12 km apart (distinct chapters)
+    same: false
+    a: {title: "Cyber Security Meetup", start: "2026-10-14T01:00:00Z", lat: 32.7157, lon: -117.1611}
+    b: {title: "Cyber Security Meetup", start: "2026-10-14T01:00:00Z", lat: 32.8233, lon: -117.1611}
+  - note: same title next month
+    same: false
+    a: {title: "San Diego Cyber Group Meetup", start: "2026-10-14T01:00:00Z", lat: 32.7157, lon: -117.1611}
+    b: {title: "San Diego Cyber Group Meetup", start: "2026-11-11T02:00:00Z", lat: 32.7157, lon: -117.1611}
+  - note: unlocated, different subjects sharing a stem
+    same: false
+    a: {title: "Women in Tech Networking", start: "2026-10-08T01:00:00Z"}
+    b: {title: "Women in Fintech Networking", start: "2026-10-08T01:00:00Z"}
