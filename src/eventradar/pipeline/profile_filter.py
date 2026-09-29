@@ -1,9 +1,49 @@
 """Profile stage: decide which events belong to which profile."""
 
+from dataclasses import dataclass
 from datetime import datetime
 
+from eventradar.classify.topic import TopicMatcher
 from eventradar.config.schema import ConfigBundle, ProfileConfig
-from eventradar.storage.repositories import EventRepository
+from eventradar.domain.enums import AttendanceMode
+from eventradar.geo.region import Region, load_region
+from eventradar.storage.repositories import EventRepository, ProfileCandidate
+
+
+@dataclass(frozen=True)
+class ProfileFilter:
+    """Region, topic, and attendance rules for one profile."""
+
+    profile: ProfileConfig
+    region: Region
+    topic: TopicMatcher
+
+    def admits(self, event: ProfileCandidate) -> bool:
+        """
+        Decide membership.
+
+        Online events need `include_online`. Located events must fall in
+        the region; unlocated ones need a region-trusted source. Every
+        event must match the topic, with weaker evidence required when a
+        source is topic-trusted.
+
+        Parameters:
+          event: Candidate event.
+        Returns:
+          True if the event belongs in the profile.
+        """
+        trust = self.profile.trust
+        online = event.attendance_mode is AttendanceMode.ONLINE
+        if online and not self.profile.include_online:
+            return False
+        if not online:
+            if event.lat is not None and event.lon is not None:
+                if not self.region.contains(event.lat, event.lon):
+                    return False
+            elif not event.sources & set(trust.region):
+                return False
+        trusted = bool(event.sources & set(trust.topic))
+        return self.topic.matches(event.title, event.description, trusted)
 
 
 def assign_profile(
@@ -11,11 +51,9 @@ def assign_profile(
     profile: ProfileConfig,
     events: EventRepository,
     now: datetime,
-) -> int:
+) -> tuple[int, int]:
     """
-    Link every event from the profile's sources to the profile.
-
-    Region and topic filtering are applied here once implemented.
+    Recompute a profile's upcoming members.
 
     Parameters:
       bundle: Loaded config.
@@ -23,10 +61,17 @@ def assign_profile(
       events: Event repository.
       now: Time new members joined.
     Returns:
-      Number of events newly linked.
+      (added, removed) counts.
     """
-    source_ids = sorted(bundle.profile_sources(profile))
-    return sum(
-        events.link_profile(event_id, profile.id, now)
-        for event_id in events.event_ids_for_sources(source_ids)
+    rules = ProfileFilter(
+        profile=profile,
+        region=load_region(bundle.regions[profile.region]),
+        topic=TopicMatcher(bundle.topics[profile.topic]),
+    )
+    candidates = events.profile_candidates(now, bundle.profile_sources(profile))
+    return events.sync_profile(
+        profile.id,
+        [c.event_id for c in candidates],
+        [c.event_id for c in candidates if rules.admits(c)],
+        now,
     )
