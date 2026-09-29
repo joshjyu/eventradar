@@ -6,6 +6,7 @@ from typing import Any
 
 SOURCE_GROUP = "eventradar.sources"
 BLOB_GROUP = "eventradar.blob"
+GEOCODER_GROUP = "eventradar.geocoders"
 
 
 class PluginNotFoundError(LookupError):
