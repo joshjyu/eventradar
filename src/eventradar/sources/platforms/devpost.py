@@ -138,6 +138,8 @@ class DevpostSource:
         updates: dict[str, Any] = {"kinds": draft.kinds | {EventKind.HACKATHON}}
         if draft.size_signal is None and isinstance(registrations, int):
             updates["size_signal"] = registrations
-        if draft.organizer is None and listing.get("organization_name"):
-            updates["organizer"] = listing["organization_name"]
+        # The page markup always names Devpost itself as organizer; the
+        # listing names the hackathon's actual organizer.
+        organizer = str(listing.get("organization_name") or "").strip()
+        updates["organizer"] = organizer or None
         return [draft.model_copy(update=updates)]

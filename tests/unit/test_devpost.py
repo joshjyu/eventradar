@@ -109,14 +109,15 @@ async def test_listing_pages_until_total_count() -> None:
 
 @respx.mock
 async def test_parse_adds_hackathon_kind_size_and_organizer() -> None:
-    """Drafts are hackathons sized by registrations."""
+    """Drafts are hackathons sized by registrations, run by the listing's
+    organizer rather than whoever the page markup names."""
     mock_devpost()
     source = _source()
     by_url = {r.native_id: r for r in await _fetch(source)}
     [alpha] = source.parse(by_url["https://alpha-hack.devpost.example.test/"])
     assert alpha.kinds == frozenset({EventKind.HACKATHON})
     assert alpha.size_signal == 120
-    assert alpha.organizer == "Alpha ACM"
+    assert alpha.organizer == "Example University"
     assert alpha.start_utc == datetime(2026, 11, 21, 16, tzinfo=UTC)
     assert alpha.tz == "America/Los_Angeles"
     [gamma] = source.parse(by_url["https://gamma-hack.devpost.example.test/"])
