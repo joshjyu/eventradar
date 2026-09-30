@@ -1,35 +1,31 @@
 /* eventradar events page. No external fonts or assets. */
 
+/*
+ * Colors follow `color-scheme`: the device setting by default, or the
+ * visitor's choice via `data-theme` on <html> (set by theme.js).
+ */
 :root {
-  --bg: #fbfbfd;
-  --surface: #ffffff;
-  --text: #1c1d21;
-  --muted: #5c6070;
-  --border: #e3e5ea;
-  --accent: #3b5bdb;
-  --accent-soft: #e8edff;
-  --new: #0f7b4b;
-  --new-soft: #e3f6ec;
-  --alert: #b3261e;
-  --alert-soft: #fde8e7;
+  --bg: light-dark(#fbfbfd, #121317);
+  --surface: light-dark(#ffffff, #1b1d22);
+  --text: light-dark(#1c1d21, #eceef3);
+  --muted: light-dark(#5c6070, #a3a8b8);
+  --border: light-dark(#e3e5ea, #2c2f37);
+  --accent: light-dark(#3b5bdb, #8ea4ff);
+  --accent-soft: light-dark(#e8edff, #232a45);
+  --new: light-dark(#0f7b4b, #6bd8a4);
+  --new-soft: light-dark(#e3f6ec, #17332a);
+  --alert: light-dark(#b3261e, #ff8a80);
+  --alert-soft: light-dark(#fde8e7, #3a1c1b);
   --radius: 10px;
   color-scheme: light dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121317;
-    --surface: #1b1d22;
-    --text: #eceef3;
-    --muted: #a3a8b8;
-    --border: #2c2f37;
-    --accent: #8ea4ff;
-    --accent-soft: #232a45;
-    --new: #6bd8a4;
-    --new-soft: #17332a;
-    --alert: #ff8a80;
-    --alert-soft: #3a1c1b;
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 * {
@@ -90,6 +86,43 @@ input:focus-visible {
   margin: 0 0 8px;
   font-size: clamp(1.8rem, 5vw, 2.4rem);
   letter-spacing: -0.02em;
+}
+
+.header-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.header-top h1 {
+  margin: 0;
+}
+
+.theme {
+  display: flex;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.theme button {
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.theme button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .tagline {

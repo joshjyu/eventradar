@@ -43,6 +43,10 @@
   (`city`, `source`), `show` (`10`, `50`, `all`), `page`, and `profile`
   (another published profile; default `socal-tech`).
 - Subscribe links point at the profile's `.ics`, RSS, and JSON feeds.
+- A Light / Dark / System control sets the color theme. The choice is
+  saved in the visitor's browser (`localStorage`) and applied by
+  `theme.js` in `<head>` before the page paints; System follows the
+  device setting.
 
 ## Custom domain from another Cloudflare account (optional)
 
