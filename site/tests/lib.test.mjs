@@ -9,6 +9,7 @@ import {
   dayHeading,
   filterEvents,
   groupEvents,
+  isNew,
   localDay,
   pageSize,
   paginate,
@@ -98,16 +99,20 @@ test("platform names are deduplicated", () => {
   assert.deepEqual(platforms(e), ["Luma", "Meetup", "MLH"]);
 });
 
-test("filters combine search, kind, and recency", () => {
+test("events first seen within a week are new", () => {
+  assert.equal(isNew(event({ first_seen: "2026-09-29T00:00:00Z" }), NOW), true);
+  assert.equal(isNew(event({ first_seen: "2026-09-20T00:00:00Z" }), NOW), false);
+});
+
+test("filters combine search and kind", () => {
   const events = [
     event({ title: "AI Hack Night", kinds: ["hackathon"] }),
     event({ title: "Founders Mixer", venue: "Irvine Hub", kinds: ["meetup"] }),
-    event({ title: "Fresh Talk", first_seen: "2026-09-29T00:00:00Z" }),
   ];
-  const titles = (f) => filterEvents(events, f, NOW).map((e) => e.title);
+  const titles = (f) => filterEvents(events, f).map((e) => e.title);
   assert.deepEqual(titles({ query: "irvine" }), ["Founders Mixer"]);
   assert.deepEqual(titles({ kind: "hackathon" }), ["AI Hack Night"]);
-  assert.deepEqual(titles({ newOnly: true }), ["Fresh Talk"]);
+  assert.deepEqual(titles({ kind: "hackathon", query: "mixer" }), []);
   assert.deepEqual(titles({ query: "ai night" }), ["AI Hack Night"]);
 });
 

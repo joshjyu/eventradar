@@ -33,15 +33,15 @@
 
 ## The page
 
-- Search (title, venue, address, organizer), kind chips, a "New this
-  week" toggle, and a page size of 10, 25 (default), 50, or all.
+- Search (title, venue, address, organizer), kind chips, and a page size
+  of 10, 25 (default), 50, or all. Events added in the last week carry a
+  "New" tag.
 - Sort by date (default, grouped by day), city (grouped by the address's
   city, or the event's `area` when there is no address), or source
   (grouped by the first platform the event was found on).
-- The view is kept in the URL so it can be shared: `q`, `kind`,
-  `new=1`, `sort` (`city`, `source`), `show` (`10`, `50`, `all`),
-  `page`, and `profile` (another published profile; default
-  `socal-tech`).
+- The view is kept in the URL so it can be shared: `q`, `kind`, `sort`
+  (`city`, `source`), `show` (`10`, `50`, `all`), `page`, and `profile`
+  (another published profile; default `socal-tech`).
 - Subscribe links point at the profile's `.ics`, RSS, and JSON feeds.
 
 ## Custom domain from another Cloudflare account (optional)
