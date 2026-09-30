@@ -154,13 +154,6 @@ input:focus-visible {
   border-color: var(--accent);
 }
 
-.toggle {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  font-size: 0.875rem;
-}
-
 .picker {
   display: flex;
   gap: 6px;

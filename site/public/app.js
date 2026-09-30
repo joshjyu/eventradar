@@ -55,15 +55,14 @@ function el(tag, className, text) {
 /**
  * Read the current filters from the controls.
  *
- * @returns {{query: string, kind: string, newOnly: boolean, sort: string,
- *   size: number}} Filters, sort order, and page size (0 for all).
+ * @returns {{query: string, kind: string, sort: string, size: number}}
+ *   Filters, sort order, and page size (0 for all).
  */
 function currentFilters() {
   const pressed = document.querySelector(".chip[aria-pressed='true']");
   return {
     query: $("q").value.trim(),
     kind: pressed ? pressed.dataset.kind : "",
-    newOnly: $("new-only").checked,
     sort: sortOrder($("sort").value),
     size: pageSize($("per-page").value),
   };
@@ -72,8 +71,8 @@ function currentFilters() {
 /**
  * Mirror the filters and page in the address bar so views can be shared.
  *
- * @param {{query: string, kind: string, newOnly: boolean, sort: string,
- *   size: number}} filters Filters, sort order, and page size.
+ * @param {{query: string, kind: string, sort: string, size: number}}
+ *   filters Filters, sort order, and page size.
  * @param {number} shownPage Page being shown.
  */
 function saveFilters(filters, shownPage) {
@@ -81,7 +80,6 @@ function saveFilters(filters, shownPage) {
   if (PROFILE !== "socal-tech") next.set("profile", PROFILE);
   if (filters.query) next.set("q", filters.query);
   if (filters.kind) next.set("kind", filters.kind);
-  if (filters.newOnly) next.set("new", "1");
   if (filters.sort !== "date") next.set("sort", filters.sort);
   if (filters.size !== DEFAULT_PAGE_SIZE) {
     next.set("show", filters.size ? String(filters.size) : "all");
@@ -96,7 +94,6 @@ function saveFilters(filters, shownPage) {
  */
 function restoreFilters() {
   $("q").value = params.get("q") || "";
-  $("new-only").checked = params.get("new") === "1";
   $("sort").value = sortOrder(params.get("sort"));
   const size = pageSize(params.get("show"));
   $("per-page").value = size ? String(size) : "all";
@@ -153,7 +150,7 @@ function card(event, now, withDay) {
 function render(events) {
   const now = new Date();
   const filters = currentFilters();
-  const matched = sortEvents(filterEvents(events, filters, now), filters.sort);
+  const matched = sortEvents(filterEvents(events, filters), filters.sort);
   const view = paginate(matched, filters.size, page);
   page = view.page;
   saveFilters(filters, page);
@@ -234,7 +231,6 @@ async function main() {
     scrollTo({ top: top - controls - 8 });
   };
   $("q").addEventListener("input", refilter);
-  $("new-only").addEventListener("change", refilter);
   $("per-page").addEventListener("change", refilter);
   $("sort").addEventListener("change", refilter);
   $("prev-page").addEventListener("click", () => turn(-1));

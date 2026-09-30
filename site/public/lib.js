@@ -183,16 +183,13 @@ export function isNew(event, now) {
  * Apply the page's filters.
  *
  * @param {object[]} events Published events.
- * @param {{query?: string, kind?: string, newOnly?: boolean}} filters
- *   Search text, kind, and new-only toggle.
- * @param {Date} now Reference time.
+ * @param {{query?: string, kind?: string}} filters Search text and kind.
  * @returns {object[]} Matching events, in input order.
  */
-export function filterEvents(events, filters, now) {
+export function filterEvents(events, filters) {
   const words = (filters.query || "").toLowerCase().split(/\s+/).filter(Boolean);
   return events.filter((event) => {
     if (filters.kind && !(event.kinds || []).includes(filters.kind)) return false;
-    if (filters.newOnly && !isNew(event, now)) return false;
     if (!words.length) return true;
     const text = [event.title, event.venue, event.address, event.organizer]
       .filter(Boolean)
