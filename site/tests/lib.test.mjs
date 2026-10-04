@@ -94,9 +94,10 @@ test("platform names are deduplicated", () => {
       { source_id: "luma-la-city" },
       { source_id: "meetup-socal-tech" },
       { source_id: "mlh-hackathons" },
+      { source_id: "devevents-socal-conferences" },
     ],
   });
-  assert.deepEqual(platforms(e), ["Luma", "Meetup", "MLH"]);
+  assert.deepEqual(platforms(e), ["Luma", "Meetup", "MLH", "dev.events"]);
 });
 
 test("events first seen within a week are new", () => {
@@ -211,6 +212,14 @@ test("source order groups by first platform", () => {
     ],
   );
   assert.equal(platformOf(event({ sources: [] })), "Other");
+});
+
+test("date-only one-day events read as all day", () => {
+  const dateOnly = event({ start_utc: "2027-04-02T07:00:00Z", end_utc: null });
+  assert.equal(timeRange(dateOnly), "All day");
+  assert.equal(whenLabel(dateOnly, true), "Fri, Apr 2 · All day");
+  const timed = event({ start_utc: "2027-04-02T16:00:00Z", end_utc: null });
+  assert.equal(timeRange(timed), "9:00 AM PDT");
 });
 
 test("whenLabel adds the day only for same-day events", () => {

@@ -10,6 +10,7 @@ const PLATFORMS = [
   ["meetup-", "Meetup"],
   ["devpost-", "Devpost"],
   ["mlh-", "MLH"],
+  ["devevents-", "dev.events"],
   ["eventbrite-", "Eventbrite"],
   ["site-", "Event website"],
 ];
@@ -80,14 +81,34 @@ function spansDays(event) {
 }
 
 /**
+ * Whether an event starts at local midnight with no end: a date-only
+ * listing for a one-day event.
+ *
+ * @param {object} event Published event.
+ * @returns {boolean} True for all-day events.
+ */
+function allDay(event) {
+  if (event.end_utc) return false;
+  const time = new Intl.DateTimeFormat("en-US", {
+    timeZone: zoneOf(event),
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(event.start_utc));
+  return time === "00:00";
+}
+
+/**
  * Format the event's time span in its own zone.
  *
- * Same-day events show times; multi-day events show dates.
+ * Same-day events show times; multi-day events show dates; date-only
+ * one-day events show "All day".
  *
  * @param {object} event Published event.
  * @returns {string} e.g. "6:00 PM – 9:00 PM PDT" or "Oct 19 – Oct 24".
  */
 export function timeRange(event) {
+  if (allDay(event)) return "All day";
   const timeZone = zoneOf(event);
   const start = new Date(event.start_utc);
   const end = event.end_utc ? new Date(event.end_utc) : null;

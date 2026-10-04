@@ -1,5 +1,7 @@
 """U.S. state and territory postal abbreviations and names."""
 
+import re
+
 STATE_NAMES = {
     "AL": "Alabama",
     "AK": "Alaska",
@@ -57,6 +59,10 @@ STATE_NAMES = {
 _BY_NAME = {name.lower(): abbr for abbr, name in STATE_NAMES.items()}
 
 
+_COUNTRIES = frozenset({"us", "usa", "u.s.", "u.s.a.", "united states"})
+_ZIP = re.compile(r"\s+\d{5}(?:-\d{4})?$")
+
+
 def state_abbr(text: str) -> str | None:
     """
     Resolve a state written as an abbreviation or a full name.
@@ -70,3 +76,24 @@ def state_abbr(text: str) -> str | None:
     if key.upper() in STATE_NAMES:
         return key.upper()
     return _BY_NAME.get(key.lower())
+
+
+def with_state(address: str, state: str) -> str:
+    """
+    Add a state to an address that names none.
+
+    The state goes before a trailing U.S. country name, else at the end:
+    "Los Angeles, United States" becomes "Los Angeles, CA, United States".
+
+    Parameters:
+      address: One-line address.
+      state: Postal abbreviation to add.
+    Returns:
+      The address, unchanged when any part already names a state.
+    """
+    parts = [p.strip() for p in address.split(",") if p.strip()]
+    if any(state_abbr(_ZIP.sub("", p)) for p in parts):
+        return address
+    at = len(parts) - 1 if parts and parts[-1].lower() in _COUNTRIES else None
+    parts.insert(len(parts) if at is None else at, state)
+    return ", ".join(parts)

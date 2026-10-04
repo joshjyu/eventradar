@@ -222,6 +222,11 @@ def _location(node: dict[str, Any]) -> dict[str, Any]:
         )
         if out["lat"] is None and valid:
             out["lat"], out["lon"] = lat, lon
+    # Some listings name the place after its address ("Los Angeles, United
+    # States"); that is not a venue.
+    venue, address = out["venue"], out["address"]
+    if venue and address and venue.casefold() == address.casefold():
+        out["venue"] = None
     return out
 
 
@@ -283,8 +288,23 @@ def _capacity(node: dict[str, Any]) -> int | None:
     return number if number >= 0 else None
 
 
+def _day(value: Any) -> Any:
+    """
+    Keep only the calendar date of a timestamp string.
+
+    Parameters:
+      value: `startDate` or `endDate` value.
+    Returns:
+      `YYYY-MM-DD` for strings, else the value unchanged.
+    """
+    return value.strip()[:10] if isinstance(value, str) else value
+
+
 def event_fields(
-    node: dict[str, Any], page_url: str, zone: ZoneInfo
+    node: dict[str, Any],
+    page_url: str,
+    zone: ZoneInfo,
+    dates_only: bool = False,
 ) -> dict[str, Any]:
     """
     Map an event node to `EventDraft` keyword arguments.
@@ -293,19 +313,26 @@ def event_fields(
       node: schema.org Event node.
       page_url: Page the node came from, for relative URLs.
       zone: Zone for offset-less times; attributed when offsets agree.
+      dates_only: Read start and end as local calendar days, for
+        publishers that stamp dates as midnight UTC.
     Returns:
       Fields for `EventDraft`, excluding `source_id` and `native_id`.
     """
     title = _text(node.get("name"))
     raw_start = node.get("startDate")
+    raw_end = node.get("endDate")
+    if dates_only:
+        raw_start, raw_end = _day(raw_start), _day(raw_end)
     if not title:
         raise EventMappingError("missing name")
     try:
         start = parse_iso(raw_start, zone)
-        end = parse_iso(node["endDate"], zone) if node.get("endDate") else None
+        end = parse_iso(raw_end, zone) if raw_end else None
     except TimeParseError as exc:
         raise EventMappingError(str(exc)) from exc
-    if end is not None and end < start:
+    # A one-day event's end date equals its start date; that says nothing
+    # about when it ends.
+    if end is not None and (end < start or (dates_only and end == start)):
         end = None
     loc = _location(node)
     url = node.get("url")

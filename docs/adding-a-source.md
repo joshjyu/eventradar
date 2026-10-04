@@ -29,6 +29,8 @@
        default_tz: America/Los_Angeles
        max_events: 100             # pages fetched per run, at most
        refresh_days: 7             # unchanged pages refetched this often
+       dates_only: false           # true: dates stamped as midnight UTC
+       default_state: null         # e.g. CA: for addresses naming no state
    ```
 
    For a site that links to its events on another platform (for example

@@ -87,6 +87,31 @@ CASES: list[tuple[str, str, dict[str, Any], dict[str, str]]] = [
         {"https://mlh.example.test/seasons/2027/events": "mlh/season.html"},
     ),
     (
+        "jsonld-dates-only",
+        "jsonld",
+        {
+            "discovery": {
+                "type": "links",
+                "urls": ["https://devevents.example.test/NA/US/CA/Los_Angeles"],
+            },
+            "url_pattern": (
+                r"^https://devevents\.example\.test/conferences/[a-z0-9-]+$"
+            ),
+            "default_tz": LA,
+            "dates_only": True,
+            "default_state": "CA",
+        },
+        {
+            "https://devevents.example.test/NA/US/CA/Los_Angeles": (
+                "devevents/listing.html"
+            ),
+            "https://devevents.example.test/conferences/"
+            "example-kubeconf-la-2026-ab12cd34": "devevents/kubeconf.html",
+            "https://devevents.example.test/conferences/"
+            "example-devopsday-la-2027-ef56gh78": "devevents/devopsday.html",
+        },
+    ),
+    (
         "jsonld-links",
         "jsonld",
         {
