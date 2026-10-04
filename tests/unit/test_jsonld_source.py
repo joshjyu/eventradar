@@ -10,6 +10,7 @@ import respx
 from eventradar.config.schema import HttpSettings, SourceConfig
 from eventradar.domain.enums import AttendanceMode, EventStatus
 from eventradar.domain.models import RawRecord
+from eventradar.geo.places import place_centroid
 from eventradar.http import HttpClient, HttpError
 from eventradar.sources.base import (
     ParseError,
@@ -259,6 +260,53 @@ async def test_links_discovery_harvests_matching_event_pages() -> None:
         next(r for r in records if r.native_id.endswith("101"))
     )
     assert robotics.title == "Robotics Day"
+
+
+@respx.mock
+async def test_date_only_listing_with_default_state() -> None:
+    """Midnight-UTC dates become local days and city-only addresses gain
+    the configured state, so the city's centroid can place them."""
+    host = "https://devevents.example.test"
+    served = {
+        f"{host}/NA/US/CA/Los_Angeles": "listing.html",
+        f"{host}/conferences/example-kubeconf-la-2026-ab12cd34": (
+            "kubeconf.html"
+        ),
+        f"{host}/conferences/example-devopsday-la-2027-ef56gh78": (
+            "devopsday.html"
+        ),
+    }
+    fixtures = FIXTURES.parent / "devevents"
+    for url, name in served.items():
+        respx.get(url).mock(
+            return_value=httpx.Response(200, text=(fixtures / name).read_text())
+        )
+    source = _source(
+        discovery={"type": "links", "urls": [f"{host}/NA/US/CA/Los_Angeles"]},
+        url_pattern=r"^https://devevents\.example\.test/conferences/[a-z0-9-]+$",
+        default_tz="America/Los_Angeles",
+        dates_only=True,
+        default_state="California",
+    )
+    records = await _fetch(source)
+    by_id = {r.native_id.rsplit("/", 1)[-1]: r for r in records}
+    assert sorted(by_id) == [
+        "example-devopsday-la-2027-ef56gh78",
+        "example-kubeconf-la-2026-ab12cd34",
+    ]
+    [kube] = source.parse(by_id["example-kubeconf-la-2026-ab12cd34"])
+    assert kube.start_utc == datetime(2026, 10, 26, 7, tzinfo=UTC)
+    assert kube.end_utc == datetime(2026, 10, 29, 7, tzinfo=UTC)
+    assert kube.address == "Los Angeles, CA, United States"
+    assert place_centroid(kube.address) is not None
+    [devops] = source.parse(by_id["example-devopsday-la-2027-ef56gh78"])
+    assert devops.end_utc is None
+
+
+def test_default_state_must_be_a_state() -> None:
+    """A typo in default_state fails config validation."""
+    with pytest.raises(ValueError, match=r"unknown U\.S\. state"):
+        _source(default_state="Calfornia")
 
 
 def test_links_discovery_requires_a_pattern() -> None:

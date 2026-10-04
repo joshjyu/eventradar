@@ -83,7 +83,13 @@ def _title(html: str) -> str:
 class PageHarvester:
     """Turns event page URLs into raw records and records into drafts."""
 
-    def __init__(self, source_id: str, zone: ZoneInfo, refresh_days: int):
+    def __init__(
+        self,
+        source_id: str,
+        zone: ZoneInfo,
+        refresh_days: int,
+        dates_only: bool = False,
+    ):
         """
         Configure the harvester for one source.
 
@@ -91,10 +97,12 @@ class PageHarvester:
           source_id: Source that owns the records.
           zone: Zone for offset-less times.
           refresh_days: Cycle length for refetching unchanged pages.
+          dates_only: Read event times as local calendar days.
         """
         self._source_id = source_id
         self._zone = zone
         self._refresh_days = refresh_days
+        self._dates_only = dates_only
 
     async def harvest(
         self, requests: Sequence[PageRequest], ctx: SourceContext
@@ -215,7 +223,7 @@ class PageHarvester:
             nodes[0],
         )
         try:
-            fields = event_fields(primary, page, self._zone)
+            fields = event_fields(primary, page, self._zone, self._dates_only)
         except EventMappingError as exc:
             raise ParseError(f"{raw.native_id}: {exc}") from exc
         return EventDraft(

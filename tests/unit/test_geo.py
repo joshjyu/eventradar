@@ -13,6 +13,7 @@ from eventradar.geo.geocode.base import GeoPoint
 from eventradar.geo.geocode.providers.census import CensusGeocoder
 from eventradar.geo.places import place_centroid
 from eventradar.geo.postal import zip_centroid
+from eventradar.geo.states import with_state
 from eventradar.geo.timezone import zone_at
 from eventradar.http import HttpClient
 from eventradar.pipeline.enrich import enrich
@@ -144,6 +145,28 @@ async def test_enrich_falls_back_to_city_centroid(tmp_path: Path) -> None:
     stored = cache.get("los angeles, ca, us")
     assert stored is not None
     assert stored.precision == "place"
+
+
+@pytest.mark.parametrize(
+    ("address", "expected"),
+    [
+        ("Los Angeles, United States", "Los Angeles, CA, United States"),
+        ("Los Angeles", "Los Angeles, CA"),
+        ("San Diego, California, US", "San Diego, California, US"),
+        ("1 Main St, Irvine, CA 92618", "1 Main St, Irvine, CA 92618"),
+    ],
+)
+def test_with_state_adds_only_a_missing_state(
+    address: str, expected: str
+) -> None:
+    """
+    A state goes before a trailing country name, and only when absent.
+
+    Parameters:
+      address: One-line address.
+      expected: Address after adding CA.
+    """
+    assert with_state(address, "CA") == expected
 
 
 def test_zone_at() -> None:

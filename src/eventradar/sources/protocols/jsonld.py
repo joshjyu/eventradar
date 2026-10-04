@@ -26,6 +26,7 @@ from pydantic import (
 from eventradar.config.schema import SourceConfig
 from eventradar.domain.models import EventDraft, RawRecord
 from eventradar.domain.urls import canonical_url
+from eventradar.geo.states import state_abbr, with_state
 from eventradar.http import HttpError
 from eventradar.schemaorg.event import slim_event
 from eventradar.schemaorg.extract import item_list_entries, jsonld_documents
@@ -102,6 +103,10 @@ class JsonLdParams(BaseModel):
     default_tz: str = "UTC"
     max_events: int = Field(default=200, ge=1, le=2000)
     refresh_days: int = Field(default=7, ge=1, le=60)
+    # Publishers that stamp dates as midnight UTC: read local days instead.
+    dates_only: bool = False
+    # U.S. state for addresses that name none (listings scoped to a state).
+    default_state: str | None = None
 
     @model_validator(mode="after")
     def _links_need_pattern(self) -> Self:
@@ -133,6 +138,24 @@ class JsonLdParams(BaseModel):
             except re.error as exc:
                 raise ValueError(f"invalid url_pattern: {exc}") from exc
         return value
+
+    @field_validator("default_state")
+    @classmethod
+    def _known_state(cls, value: str | None) -> str | None:
+        """
+        Require a U.S. state, stored as its postal abbreviation.
+
+        Parameters:
+          value: Configured state.
+        Returns:
+          The abbreviation.
+        """
+        if value is None:
+            return None
+        abbr = state_abbr(value)
+        if abbr is None:
+            raise ValueError(f"unknown U.S. state: {value}")
+        return abbr
 
     @field_validator("default_tz")
     @classmethod
@@ -171,6 +194,7 @@ class JsonLdSource:
             config.id,
             ZoneInfo(self.params.default_tz),
             self.params.refresh_days,
+            self.params.dates_only,
         )
         self._pattern = (
             re.compile(self.params.url_pattern)
@@ -295,4 +319,9 @@ class JsonLdSource:
         Returns:
           A single draft.
         """
-        return [self._pages.parse(raw)]
+        draft = self._pages.parse(raw)
+        state = self.params.default_state
+        if state and draft.address:
+            address = with_state(draft.address, state)
+            draft = draft.model_copy(update={"address": address})
+        return [draft]

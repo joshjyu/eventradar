@@ -152,6 +152,25 @@ def test_naive_and_date_only_times_use_zone() -> None:
     assert dated["start_utc"] == datetime(2026, 11, 6, 8, tzinfo=UTC)
 
 
+def test_dates_only_reads_midnight_utc_as_local_days() -> None:
+    """Publishers that stamp dates as midnight UTC get local days."""
+    node = _node(
+        startDate="2026-10-26T00:00:00.000+00:00",
+        endDate="2026-10-29T00:00:00.000+00:00",
+    )
+    literal = event_fields(node, PAGE, LA)
+    assert literal["start_utc"] == datetime(2026, 10, 26, tzinfo=UTC)
+    days = event_fields(node, PAGE, LA, dates_only=True)
+    assert days["start_utc"] == datetime(2026, 10, 26, 7, tzinfo=UTC)
+    assert days["end_utc"] == datetime(2026, 10, 29, 7, tzinfo=UTC)
+    assert days["tz"] == "America/Los_Angeles"
+    one_day = _node(
+        startDate="2027-04-02T00:00:00.000+00:00",
+        endDate="2027-04-02T00:00:00.000+00:00",
+    )
+    assert event_fields(one_day, PAGE, LA, dates_only=True)["end_utc"] is None
+
+
 def test_foreign_offset_is_not_attributed_to_zone() -> None:
     """An offset that disagrees with the zone leaves tz unset."""
     fields = event_fields(
