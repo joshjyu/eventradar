@@ -1,4 +1,30 @@
-# Contributor conventions
+# Contributing
+
+## Getting started
+
+```bash
+uv sync
+uv run pre-commit install
+uv run eventradar config validate
+uv run eventradar source test meetup-socal-tech
+uv run eventradar run
+uv run pytest
+```
+
+`run` uses the `local` environment: state and feeds go to
+`.eventradar/`. To view the page against them, see
+[docs/site.md](docs/site.md#local-preview). `uv run eventradar source
+list` prints every configured source.
+
+## Layout
+
+- `config/`: settings, sources, profiles, regions, topics, kind rules
+- `src/eventradar/`: pipeline, adapters, geo, dedup, storage, publishing
+- `tests/`: unit, contract, integration, regression, golden corpora
+- `site/`: events page and the Pages Function that serves feeds
+- `workers/scheduler/`: Cloudflare Worker that triggers the daily run
+- `scripts/`: builders for the packaged geo tables, local site preview
+- `docs/`: runbooks, API, and architecture decisions (`docs/adr/`)
 
 ## Naming
 
