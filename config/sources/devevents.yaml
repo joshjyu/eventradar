@@ -1,0 +1,40 @@
+version: 1
+
+# dev.events: a community-curated listing of tech conferences and meetups.
+# Listing pages link to one page per event, each with schema.org JSON-LD.
+# Dates are stamped as midnight UTC (all-day), and places name only the
+# city and country, so `dates_only` and `default_state` correct them.
+#
+# Only cities with their own page are listed: an unknown city path
+# returns events from everywhere instead of an error. Meetup events also
+# live under /conferences/.
+sources:
+  - id: devevents-socal-conferences
+    adapter: jsonld
+    default_kinds: [conference]
+    params:
+      discovery:
+        type: links
+        urls:
+          - "https://dev.events/NA/US/CA/Los_Angeles"
+          - "https://dev.events/NA/US/CA/San_Diego"
+      url_pattern: '^https://dev\.events/conferences/[a-z0-9-]+$'
+      default_tz: America/Los_Angeles
+      dates_only: true
+      default_state: CA
+      max_events: 60
+
+  - id: devevents-socal-meetups
+    adapter: jsonld
+    default_kinds: [meetup]
+    params:
+      discovery:
+        type: links
+        urls:
+          - "https://dev.events/meetups/NA/US/CA/Los_Angeles"
+          - "https://dev.events/meetups/NA/US/CA/San_Diego"
+      url_pattern: '^https://dev\.events/conferences/[a-z0-9-]+$'
+      default_tz: America/Los_Angeles
+      dates_only: true
+      default_state: CA
+      max_events: 60

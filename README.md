@@ -19,6 +19,7 @@ are configuration; adding a calendar needs no code.
 | Meetup | `meetup` | Public GraphQL search, Technology category, five SoCal areas |
 | MLH | `mlh` | Member hackathons from the season listing |
 | Event websites | `jsonld` | schema.org `Event` data on linked pages (OC Tech Week) |
+| dev.events | `jsonld` | Conference and meetup listings for Los Angeles and San Diego |
 | Devpost, Eventbrite | `devpost`, `jsonld`, `eventbrite` | Disabled: their pages block datacenter IPs; the Eventbrite API adapter needs a token |
 
 `config/sources/` holds the full list; `uv run eventradar source list`
