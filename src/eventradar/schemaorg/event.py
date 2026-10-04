@@ -222,6 +222,11 @@ def _location(node: dict[str, Any]) -> dict[str, Any]:
         )
         if out["lat"] is None and valid:
             out["lat"], out["lon"] = lat, lon
+    # Some listings name the place after its address ("Los Angeles, United
+    # States"); that is not a venue.
+    venue, address = out["venue"], out["address"]
+    if venue and address and venue.casefold() == address.casefold():
+        out["venue"] = None
     return out
 
 

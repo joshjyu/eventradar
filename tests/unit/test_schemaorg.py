@@ -171,6 +171,22 @@ def test_dates_only_reads_midnight_utc_as_local_days() -> None:
     assert event_fields(one_day, PAGE, LA, dates_only=True)["end_utc"] is None
 
 
+def test_place_named_after_its_address_is_not_a_venue() -> None:
+    """A Place whose name repeats its address leaves the venue empty."""
+    location = {
+        "@type": "Place",
+        "name": "Los Angeles, United States",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Los Angeles",
+            "addressRegion": "United States",
+        },
+    }
+    fields = event_fields(_node(location=location), PAGE, LA)
+    assert fields["venue"] is None
+    assert fields["address"] == "Los Angeles, United States"
+
+
 def test_foreign_offset_is_not_attributed_to_zone() -> None:
     """An offset that disagrees with the zone leaves tz unset."""
     fields = event_fields(
