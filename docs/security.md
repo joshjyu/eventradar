@@ -28,12 +28,15 @@
 3. **Actions**: Settings -> Actions -> General
    - Workflow permissions: *Read repository contents*.
    - Allowed actions: owner plus selected: `actions/*`,
-     `astral-sh/setup-uv@*`.
-4. **Ruleset for `main`**: require a pull request, require status checks
-   `test`, `worker`, `site`, and `secrets-scan`, block force pushes and
-   deletion.
-5. **Code security**: enable Dependabot alerts and security updates.
-6. Two-factor authentication on GitHub and Cloudflare.
+     `astral-sh/setup-uv@*`, `dependabot/fetch-metadata@*`.
+4. **Ruleset for `main`**: require a pull request (no required
+   approvals), require status checks `test`, `worker`, `site`, and
+   `secrets-scan`, block force pushes and deletion. Auto-merge relies on
+   the required checks: without them it merges before CI finishes.
+5. **Auto-merge**: Settings -> General -> Pull Requests -> *Allow
+   auto-merge* (used for Dependabot PRs, ADR 0013).
+6. **Code security**: enable Dependabot alerts and security updates.
+7. Two-factor authentication on GitHub and Cloudflare.
 
 ### Local
 
