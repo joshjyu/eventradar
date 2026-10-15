@@ -12,6 +12,7 @@
   parameters.
 - One R2 token, scoped to exactly the state and public buckets.
 - Actions are pinned to commit SHAs; gitleaks runs in pre-commit and CI
-  from a checksum-verified binary; Dependabot tracks actions and Python.
+  from a checksum-verified binary; Dependabot tracks actions, Python,
+  and npm (auto-merge rules in ADR 0013).
 - A run where every source fails never publishes, and a failed run never
   uploads state.
